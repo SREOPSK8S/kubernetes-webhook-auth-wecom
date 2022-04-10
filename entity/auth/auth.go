@@ -6,7 +6,7 @@ import (
 
 type TokenReviewResponse struct {
 	Meta v1.TypeMeta
-	Status TokenReviewStatus
+	Status *TokenReviewStatus
 }
 
 func NewTokenReviewResponse() *TokenReviewResponse  {
@@ -15,7 +15,7 @@ func NewTokenReviewResponse() *TokenReviewResponse  {
 			APIVersion: "authentication.k8s.io/v1",
 			Kind: "TokenReview",
 		},
-		Status: TokenReviewStatus{
+		Status: &TokenReviewStatus{
 			Audiences: []string{},
 		},
 	}
