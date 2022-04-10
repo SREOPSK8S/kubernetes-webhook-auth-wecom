@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/spf13/viper"
 	"os"
+	"strconv"
 )
 
 func InitAndLoad() {
@@ -16,8 +17,17 @@ func InitAndLoad() {
 	}
 }
 
-func GetServerPort() string {
-	return viper.GetString("server.port")
+func GetServerPort() (servicePort int) {
+	tmpPort := os.Getenv("SERVICE_PORT")
+	portStr, err := strconv.Atoi(tmpPort)
+	if err != nil {
+		return viper.GetInt("server.port")
+	}
+	servicePort = portStr
+	if servicePort != 0 {
+		return servicePort
+	}
+	return viper.GetInt("server.port")
 }
 
 func GetCorpID() (corpID string) {
