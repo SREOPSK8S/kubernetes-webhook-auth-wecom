@@ -16,8 +16,8 @@ func InitAndLoad() {
 	}
 }
 
-func GetServerPort() string {
-	return viper.GetString("server.port")
+func GetServerPort() int {
+	return viper.GetInt("server.port")
 }
 
 func GetCorpID() (corpID string) {
