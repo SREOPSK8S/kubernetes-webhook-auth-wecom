@@ -17,6 +17,10 @@ func NewTokenReviewResponse() *TokenReviewResponse  {
 		},
 		Status: &TokenReviewStatus{
 			Audiences: []string{},
+			User: UserInfo{
+				Groups: []string{},
+				Extra: map[string]ExtraValue{},
+			},
 		},
 	}
 }
