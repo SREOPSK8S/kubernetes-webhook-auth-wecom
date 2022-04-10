@@ -8,10 +8,10 @@ import (
 func TestGetCorpID(t *testing.T) {
 	wantCorpID := "want"
 	err := os.Setenv("CORP_ID", "want")
-	outPut := GetCorpID()
 	if err != nil {
-		return
+		t.Fatalf("set env error %v\n",err)
 	}
+	outPut := GetCorpID()
 	if wantCorpID != outPut {
 		t.Fatalf("want %s, got %s", wantCorpID, outPut)
 	}
@@ -26,7 +26,7 @@ func TestGetCorpSecret(t *testing.T) {
 	}
 	err := os.Setenv("CORP_SECRET", "CorpSecret")
 	if err != nil {
-		return
+		t.Fatalf("set env error %v\n",err)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
