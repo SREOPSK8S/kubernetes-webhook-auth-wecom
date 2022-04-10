@@ -1,4 +1,4 @@
-package entity
+package wecom
 
 type CorpIDAndSecret struct {
 	CorpID     string
