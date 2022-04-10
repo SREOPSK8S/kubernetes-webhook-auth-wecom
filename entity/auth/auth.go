@@ -5,11 +5,21 @@ import (
 )
 
 type TokenReviewResponse struct {
-	v1.TypeMeta
-	v1.ObjectMeta
+	Meta v1.TypeMeta
 	Status TokenReviewStatus
 }
 
+func NewTokenReviewResponse() *TokenReviewResponse  {
+	return &TokenReviewResponse{
+		Meta: v1.TypeMeta{
+			APIVersion: "authentication.k8s.io/v1",
+			Kind: "TokenReview",
+		},
+		Status: TokenReviewStatus{
+			Audiences: []string{},
+		},
+	}
+}
 type TokenReviewStatus struct {
 	// Authenticated indicates that the token was associated with a known user.
 	Authenticated bool
