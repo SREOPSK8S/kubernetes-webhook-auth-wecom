@@ -19,9 +19,13 @@ func InitAndLoad() {
 
 func GetServerPort() (servicePort int) {
 	tmpPort := os.Getenv("SERVICE_PORT")
+	portVip := viper.GetInt("server.port")
+	if tmpPort == "" && portVip != 0  {
+		return portVip
+	}
 	portStr, err := strconv.Atoi(tmpPort)
 	if err != nil {
-		return viper.GetInt("server.port")
+		return portVip
 	}
 	servicePort = portStr
 	if servicePort != 0 {
