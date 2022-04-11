@@ -11,7 +11,6 @@ import (
 )
 
 func Healthy(c *gin.Context) {
-	logs.Logger.Info("Hello")
 	c.JSON(200, gin.H{
 		"message": "success",
 	})
