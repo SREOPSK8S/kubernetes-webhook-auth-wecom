@@ -23,7 +23,10 @@ func TokenRequest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, tr)
 		return
 	}
-	logs.Logger.Info("Receive request",zap.Any("request",tr))
+	logs.Logger.Info("Receive request", zap.Any("request", tr),
+		zap.Any("header", c.Request.Header),
+		zap.String("host", c.Request.Host),
+		zap.String("remoteAddr", c.Request.RemoteAddr))
 	curToken := tr.Spec.Token
 	username, _ := base64.StdEncoding.DecodeString(curToken)
 	if curToken == "Y2hhb3lhbmcK" {
@@ -45,7 +48,7 @@ func TokenRequest(c *gin.Context) {
 			},
 			Status: st,
 		}
-		logs.Logger.Info("response data",zap.Any("response", response))
+		logs.Logger.Info("response data", zap.Any("response", response))
 		c.JSON(200, response)
 		return
 	}
