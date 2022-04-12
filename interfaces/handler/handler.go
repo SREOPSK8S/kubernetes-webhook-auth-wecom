@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"encoding/base64"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/auth"
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/interfs"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/interfaces/logs"
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/interfaces/worksimpl"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 )
 
@@ -26,29 +26,13 @@ func TokenRequest(c *gin.Context) {
 		zap.Any("header", c.Request.Header),
 		zap.String("host", c.Request.Host),
 		zap.String("remoteAddr", c.Request.RemoteAddr))
-	curToken := tr.Spec.Token
-	username, _ := base64.StdEncoding.DecodeString(curToken)
-	if curToken == "Y2hhb3lhbmcK" {
-		st := auth.TokenReviewStatus{
-			Authenticated: true,
-			User: auth.UserInfo{
-				UID:      "0",
-				Username: string(username),
-				Groups:   []string{"dev"},
-				Extra:    map[string]auth.ExtraValue{},
-			},
-			Audiences: []string{},
-			Error:     "",
-		}
-		response := auth.TokenReviewResponse{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       tr.Kind,
-				APIVersion: tr.APIVersion,
-			},
-			Status: st,
-		}
+	var valid  interfs.AuthenticationUserInfo =&worksimpl.WorkChatImpl{}
+	status := valid.TokenReviewVerify(tr)
+	if status{
+		response := valid.TokenReviewSuccess(tr)
 		logs.Logger.Info("response data", zap.Any("response", response))
 		c.JSON(200, response)
 		return
 	}
+	c.JSON(403,valid.TokenReviewFailure(tr))
 }

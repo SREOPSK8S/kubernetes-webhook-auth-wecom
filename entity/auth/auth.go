@@ -9,7 +9,7 @@ import (
 
 type TokenReview struct {
 	metav1.TypeMeta
-	// ObjectMeta fulfills the metav1.ObjectMetaAccessor interface so that the stock
+	// ObjectMeta fulfills the metav1.ObjectMetaAccessor interfs so that the stock
 	// REST handler paths work
 	//metav1.ObjectMeta
 	// Spec holds information about the request being evaluated
@@ -18,7 +18,7 @@ type TokenReview struct {
 
 type TokenReviewResponse  struct {
 	metav1.TypeMeta
-	// ObjectMeta fulfills the metav1.ObjectMetaAccessor interface so that the stock
+	// ObjectMeta fulfills the metav1.ObjectMetaAccessor interfs so that the stock
 	// REST handler paths work
 	//metav1.ObjectMeta
 	// Status is filled in by the server and indicates whether the request can be authenticated.
@@ -37,7 +37,7 @@ type TokenReviewSpec struct {
 }
 
 // TokenReviewStatus is the result of the token authentication request.
-// This type mirrors the authentication.Token interface
+// This type mirrors the authentication.Token interfs
 type TokenReviewStatus struct {
 	// Authenticated indicates that the token was associated with a known user.
 	Authenticated bool `json:"authenticated"`
@@ -72,12 +72,12 @@ type UserInfo struct {
 
 type ExtraValue []string
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:deepcopy-gen:interfs=k8s.io/apimachinery/pkg/runtime.Object
 
 // TokenRequest requests a token for a given service account.
 type TokenRequest struct {
 	metav1.TypeMeta
-	// ObjectMeta fulfills the metav1.ObjectMetaAccessor interface so that the stock
+	// ObjectMeta fulfills the metav1.ObjectMetaAccessor interfs so that the stock
 	// REST handler paths work
 	metav1.ObjectMeta
 
