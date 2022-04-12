@@ -4,3 +4,4 @@ server:
 WeCom:
   CorpID:
   CorpSecret:
+  AgentId:
