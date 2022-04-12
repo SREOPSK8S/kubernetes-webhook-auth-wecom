@@ -41,8 +41,3 @@ type Department struct {
 	Order int `json:"order"`
 }
 
-func (ac *AccessTokenResponse) GetAccessToken() (accessToken string) {
-	accessToken = ac.AccessToken
-	return
-}
-
