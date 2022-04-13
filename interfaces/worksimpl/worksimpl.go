@@ -5,22 +5,50 @@ import (
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/interfs"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/wecom"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/interfaces/logs"
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/interfaces/stores"
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 var _ interfs.AuthenticationUserInfo = &WorkChatImpl{}
 var _ wecom.ServerAccessToken = &WorkChatImpl{}
+
+
+var ACCESS_TOKEN_EXPIRE = new(time.Time)
+
+type TokenExpire struct {
+	ExpireTime time.Time
+	Lock sync.Locker
+}
 
 type WorkChatImpl struct {
 	AccessTokenMap  map[string]string
 	SuccessResponse *wecom.ReadMemberResponse
 }
 
-func (w *WorkChatImpl) GetServerAccessToken(secret wecom.CorpIDAndSecret) (result *wecom.AccessTokenResponse, status bool) {
+
+
+func (w *WorkChatImpl) GetServerAccessToken(secret wecom.CorpIDAndSecret) (accessToken string, status bool) {
+	var store wecom.StoreAccessToken = stores.RedisImpl{}
+	if  ACCESS_TOKEN_EXPIRE.Before(time.Now()) {
+		result , ok := w.GetAccessTokenFromWorkChat(secret)
+		status = ok
+		accessToken = result.AccessToken
+		// todo 写入缓存中
+		store.SetSoreAccessToken(accessToken)
+		return
+	}
+	// todo 从缓存读取
+	return "",true
+}
+
+
+func (w *WorkChatImpl)GetAccessTokenFromWorkChat(secret wecom.CorpIDAndSecret) (result *wecom.AccessTokenResponse, status bool) {
 	params := make(map[string]string, 4)
 	params["corpid"] = secret.CorpID
 	params["corpsecret"] = secret.CorpSecret
@@ -34,10 +62,11 @@ func (w *WorkChatImpl) GetServerAccessToken(secret wecom.CorpIDAndSecret) (resul
 		logs.Logger.Info("Get Token failure,", zap.Any("response", response))
 		return result, false
 	}
-	logs.Logger.Info("Get Token success", zap.Any("response", response))
 	w.AccessTokenMap = map[string]string{}
 	w.AccessTokenMap["access_token"] = result.AccessToken
-	return result, true
+	*ACCESS_TOKEN_EXPIRE = time.Now().Add(time.Duration(result.ExpiresIn-1000)* time.Second)
+	logs.Logger.Info("Get Token success", zap.Any("response", response),zap.Any("AccessTokenExpireTime",ACCESS_TOKEN_EXPIRE))
+	return result,true
 }
 
 func (WorkChatImpl) TokenReviewFailure(review auth.TokenReview) auth.TokenReviewResponse {

@@ -44,7 +44,7 @@ type Department struct {
 }
 
 type ServerAccessToken interface {
-	GetServerAccessToken(CorpIDAndSecret) (data *AccessTokenResponse, status bool)
+	GetServerAccessToken(CorpIDAndSecret) (accessTokenAccess string, status bool)
 }
 
 const (
@@ -52,3 +52,9 @@ const (
 	GetReadMemberURL          string = "https://qyapi.weixin.qq.com/cgi-bin/user/get"       // 读取成员
 	GetDepartmentDetailsURL   string = "https://qyapi.weixin.qq.com/cgi-bin/department/get" // 获取单个部门详情
 )
+
+type StoreAccessToken interface {
+	GetSoreAccessToken() (string, bool)
+	SetSoreAccessToken(string) bool
+	DeleteAccessToken() error
+}

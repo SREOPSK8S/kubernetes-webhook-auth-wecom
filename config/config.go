@@ -66,3 +66,11 @@ func GetAgentId()  (agentID int64) {
 	}
 	return viper.GetInt64("WeCom.AgentId")
 }
+
+func GetRedisServerAdd() (addr string){
+	return viper.GetString("redis.server")
+}
+
+func GetRedisServerPort() (addr string){
+	return viper.GetString("redis.port")
+}
