@@ -11,33 +11,44 @@ type BaseResponse struct {
 }
 type AccessTokenResponse struct {
 	BaseResponse
-	AccessToken  string `json:"access_token"`
-	ExpiresIn    int    `json:"expires_in"`
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int    `json:"expires_in"`
 }
+
 // ReadMemberResponse https://developer.work.weixin.qq.com/document/path/90196
 type ReadMemberResponse struct {
 	BaseResponse
-	Userid string `json:"userid"`
-	Name string `json:"name"`
-	Department []int `json:"department"`
-	Mobile string `json:"mobile"`
-	Gender string `json:"gender"`
-	Email string `json:"email"`
-	Telephone string `json:"telephone"`
-	Alias string `json:"alias"`
-	Status int `json:"status"`
+	Userid     string `json:"userid"`
+	Name       string `json:"name"`
+	Department []int  `json:"department"`
+	Mobile     string `json:"mobile"`
+	Gender     string `json:"gender"`
+	Email      string `json:"email"`
+	Telephone  string `json:"telephone"`
+	Alias      string `json:"alias"`
+	Status     int    `json:"status"`
 }
+
 // GetDepartmentDetailsResponse https://developer.work.weixin.qq.com/document/path/95351
 type GetDepartmentDetailsResponse struct {
 	BaseResponse
 	Department Department `json:"department"`
 }
 type Department struct {
-	ID int `json:"id"`
-	Name string `json:"name"`
-	NameEn string `json:"name_en"`
+	ID               int      `json:"id"`
+	Name             string   `json:"name"`
+	NameEn           string   `json:"name_en"`
 	DepartmentLeader []string `json:"department_leader"`
-	ParentID int `json:"parentid"`
-	Order int `json:"order"`
+	ParentID         int      `json:"parentid"`
+	Order            int      `json:"order"`
 }
 
+type ServerAccessToken interface {
+	GetServerAccessToken(CorpIDAndSecret) (data *AccessTokenResponse, status bool)
+}
+
+const (
+	GetWorkChatAccessTokenURL string = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"       // 获取access_token
+	GetReadMemberURL          string = "https://qyapi.weixin.qq.com/cgi-bin/user/get"       // 读取成员
+	GetDepartmentDetailsURL   string = "https://qyapi.weixin.qq.com/cgi-bin/department/get" // 获取单个部门详情
+)

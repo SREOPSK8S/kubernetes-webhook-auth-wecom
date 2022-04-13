@@ -3,11 +3,42 @@ package worksimpl
 import (
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/auth"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/interfs"
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/wecom"
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/interfaces/logs"
+	"github.com/go-resty/resty/v2"
+	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strconv"
+	"strings"
 )
 
-var _  interfs.AuthenticationUserInfo= &WorkChatImpl{}
-type WorkChatImpl struct {}
+var _ interfs.AuthenticationUserInfo = &WorkChatImpl{}
+var _ wecom.ServerAccessToken = &WorkChatImpl{}
+
+type WorkChatImpl struct {
+	AccessTokenMap  map[string]string
+	SuccessResponse *wecom.ReadMemberResponse
+}
+
+func (w *WorkChatImpl) GetServerAccessToken(secret wecom.CorpIDAndSecret) (result *wecom.AccessTokenResponse, status bool) {
+	params := make(map[string]string, 4)
+	params["corpid"] = secret.CorpID
+	params["corpsecret"] = secret.CorpSecret
+	client := resty.New()
+	client.SetQueryParams(params)
+	response, err := client.R().SetResult(&result).Get(wecom.GetWorkChatAccessTokenURL)
+	if err != nil {
+		return nil, false
+	}
+	if result.ErrorCode != 0 && result.ErrorMessage != "ok" || response.RawResponse.StatusCode != 200 {
+		logs.Logger.Info("Get Token failure,", zap.Any("response", response))
+		return result, false
+	}
+	logs.Logger.Info("Get Token success", zap.Any("response", response))
+	w.AccessTokenMap = map[string]string{}
+	w.AccessTokenMap["access_token"] = result.AccessToken
+	return result, true
+}
 
 func (WorkChatImpl) TokenReviewFailure(review auth.TokenReview) auth.TokenReviewResponse {
 	return auth.TokenReviewResponse{
@@ -15,7 +46,7 @@ func (WorkChatImpl) TokenReviewFailure(review auth.TokenReview) auth.TokenReview
 			Kind:       review.Kind,
 			APIVersion: review.APIVersion,
 		},
-		Status:   auth.TokenReviewStatus{
+		Status: auth.TokenReviewStatus{
 			Authenticated: false,
 			User:          auth.UserInfo{},
 			Audiences:     []string{},
@@ -24,18 +55,18 @@ func (WorkChatImpl) TokenReviewFailure(review auth.TokenReview) auth.TokenReview
 	}
 }
 
-func (WorkChatImpl) TokenReviewSuccess(review auth.TokenReview) (successResponse auth.TokenReviewResponse) {
+func (w *WorkChatImpl) TokenReviewSuccess(review auth.TokenReview) (successResponse auth.TokenReviewResponse) {
 	usersInfo := auth.UserInfo{
-		Username: "chaoyang",
-		UID:      "0",
-		Groups:   []string{"dev"},
+		Username: w.SuccessResponse.Userid,
+		UID:      w.SuccessResponse.Name,
+		Groups:   w.GetDepartmentDetails(),
 		Extra:    map[string]auth.ExtraValue{},
 	}
 	reviewStatus := auth.TokenReviewStatus{
 		Authenticated: true,
-		User: usersInfo,
-		Audiences: []string{},
-		Error:     "",
+		User:          usersInfo,
+		Audiences:     []string{},
+		Error:         "",
 	}
 	successResponse = auth.TokenReviewResponse{
 		TypeMeta: metav1.TypeMeta{
@@ -47,13 +78,59 @@ func (WorkChatImpl) TokenReviewSuccess(review auth.TokenReview) (successResponse
 	return
 }
 
-func (WorkChatImpl) TokenReviewVerify(review interface{})  bool  {
+func (w *WorkChatImpl) TokenReviewVerify(review interface{}) bool {
 	data, ok := review.(auth.TokenReview)
 	if !ok {
 		return false
 	}
-	if data.Spec.Token == "Y2hhb3lhbmcK" {
-		return true
+	// todo 实现为用户名生成Token，并验证Token
+	// 当前根据用户名进行判断
+	status, readResponse := w.GetReadMember(data.Spec.Token)
+	w.SuccessResponse = readResponse
+	return status
+}
+
+// 获取成员
+func (w *WorkChatImpl) GetReadMember(token string) (status bool, readMemberResponse *wecom.ReadMemberResponse) {
+	client := resty.New()
+	// todo 需要转换Token到用户名
+	w.AccessTokenMap["userid"] = token
+	client.SetQueryParams(w.AccessTokenMap)
+	response, err := client.R().SetResult(&readMemberResponse).Get(wecom.GetReadMemberURL)
+	if err != nil {
+		return false, nil
 	}
-	return false
+	if readMemberResponse.ErrorCode != 0 && readMemberResponse.ErrorMessage != "ok" || response.RawResponse.StatusCode != 200 {
+		logs.Logger.Info("GetReadMember failure,", zap.Any("response", readMemberResponse))
+		return false, nil
+	}
+	if readMemberResponse.Status != 1 {
+		logs.Logger.Info("GetReadMember user not work,", zap.Any("response", readMemberResponse))
+		return false, nil
+	}
+	logs.Logger.Info("GetReadMember success details", zap.Any("response", readMemberResponse))
+	if strings.ToLower(w.AccessTokenMap["userid"]) == strings.ToLower(readMemberResponse.Userid) {
+		return true, readMemberResponse
+	}
+	return false, nil
+}
+
+func (w *WorkChatImpl) GetDepartmentDetails() (nameList []string) {
+	var result wecom.GetDepartmentDetailsResponse
+	accessTokenMap := w.AccessTokenMap
+	client := resty.New()
+	for _, item := range w.SuccessResponse.Department {
+		accessTokenMap["id"] = strconv.Itoa(item)
+		client.SetQueryParams(accessTokenMap)
+		response, err := client.R().SetResult(&result).Get(wecom.GetDepartmentDetailsURL)
+		if err != nil {
+			return
+		}
+		if result.ErrorCode != 0 && result.ErrorMessage != "ok" || response.StatusCode() != 200 {
+			return
+		}
+		nameList = append(nameList, result.Department.Name)
+	}
+	logs.Logger.Info("GetDepartmentDetails success details",zap.String("uid",w.SuccessResponse.Userid),zap.Strings("department",nameList))
+	return
 }
