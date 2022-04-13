@@ -7,6 +7,7 @@ require (
 	github.com/spf13/viper v1.10.1
 	go.uber.org/zap v1.21.0
 	k8s.io/apimachinery v0.23.5
+	github.com/go-resty/resty/v2 v2.7.0
 )
 
 require (
