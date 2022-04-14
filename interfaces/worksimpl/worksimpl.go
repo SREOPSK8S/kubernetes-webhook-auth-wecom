@@ -20,8 +20,6 @@ var _ interfs.AuthenticationUserInfo = &WorkChatImpl{}
 var _ wecom.ServerAccessToken = &WorkChatImpl{}
 
 
-var ACCESS_TOKEN_EXPIRE = new(time.Time)
-
 type TokenExpire struct {
 	ExpireTime time.Time
 	Lock sync.Locker
@@ -35,29 +33,24 @@ type WorkChatImpl struct {
 
 
 func (w *WorkChatImpl) GetServerAccessToken(secret wecom.CorpIDAndSecret) (accessToken string, status bool) {
+	// 需要完成从cache里面获取
 	ctx := context.Background()
 	var store wecom.StoreAccessToken = stores.EtcdImpl{}
-	if  ACCESS_TOKEN_EXPIRE.Before(time.Now()) {
+	// todo 从缓存读取
+	accessToken,status = store.GetSoreAccessToken(ctx)
+	if  !status || accessToken == "" {
+		// 不在缓存中，请求后端服务并重新写入缓存
 		result , ok := w.GetAccessTokenFromWorkChat(secret)
 		status = ok
 		accessToken = result.AccessToken
 		// todo 写入缓存中
-		setStatus := store.SetSoreAccessToken(ctx,accessToken)
+		setStatus := store.SetSoreAccessToken(ctx,accessToken,wecom.WorkChatAccessTokenExpire)
 		if setStatus != true {
 			logs.Logger.Error("Store SetSoreAccessToken Token failure")
 		}
 		return
 	}
-	// todo 从缓存读取
-	storeToken, ok :=store.GetSoreAccessToken(ctx)
-	if !ok || storeToken == "" {
-		newResult,sts := w.GetAccessTokenFromWorkChat(secret)
-		if !sts {
-			logs.Logger.Error("Get GetSoreAccessToken Token failure", zap.Any("response", newResult))
-			return
-		}
-	}
-	return storeToken,ok
+	return accessToken,status
 }
 
 
@@ -77,8 +70,7 @@ func (w *WorkChatImpl)GetAccessTokenFromWorkChat(secret wecom.CorpIDAndSecret) (
 	}
 	w.AccessTokenMap = map[string]string{}
 	w.AccessTokenMap["access_token"] = result.AccessToken
-	*ACCESS_TOKEN_EXPIRE = time.Now().Add(time.Duration(result.ExpiresIn-1000)* time.Second)
-	logs.Logger.Info("Get Token success", zap.Any("response", response),zap.Any("AccessTokenExpireTime",ACCESS_TOKEN_EXPIRE))
+	logs.Logger.Info("Get Token success", zap.Any("response", response))
 	return result,true
 }
 

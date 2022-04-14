@@ -51,13 +51,14 @@ type ServerAccessToken interface {
 
 const (
 	WorkChatAccessTokenKeyName string = "workChatKubernetesAccessKey"                        // 设置访问企业微信access_token键
+	WorkChatAccessTokenExpire int64 = 7134
 	GetWorkChatAccessTokenURL  string = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"       // 获取access_token
 	GetReadMemberURL           string = "https://qyapi.weixin.qq.com/cgi-bin/user/get"       // 读取成员
 	GetDepartmentDetailsURL    string = "https://qyapi.weixin.qq.com/cgi-bin/department/get" // 获取单个部门详情
 )
 
 type StoreAccessToken interface {
-	SetSoreAccessToken(context.Context,string) bool
+	SetSoreAccessToken(context.Context,string,int64) bool
 	GetSoreAccessToken(ctx context.Context) (string, bool)
 	DeleteAccessToken(ctx context.Context) bool
 }

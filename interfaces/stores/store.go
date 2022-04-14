@@ -29,7 +29,13 @@ func NewStore() *store.Client {
 
 type EtcdImpl struct {
 }
-func (EtcdImpl) SetSoreAccessToken(ctx context.Context,token string) bool {
+func (EtcdImpl) SetSoreAccessToken(ctx context.Context,token string,ttl int64) bool {
+	var expireTime int64
+	if ttl == 0 {
+		expireTime = wecom.WorkChatAccessTokenExpire
+	} else {
+		expireTime = ttl
+	}
 	client := NewStore()
 	if client == nil {
 		return false
@@ -42,7 +48,12 @@ func (EtcdImpl) SetSoreAccessToken(ctx context.Context,token string) bool {
 		}
 	}()
 	accessTokenName := wecom.WorkChatAccessTokenKeyName
-	response, err := client.Put(ctx, accessTokenName, token)
+	grantRes,errs := client.Grant(context.TODO(),expireTime)
+	if errs != nil {
+		logs.Logger.Error("SetSoreAccessToken Grant failure", zap.Any("error_msg", errs),zap.Any("response",grantRes))
+		return false
+	}
+	response, err := client.Put(context.TODO(), accessTokenName, token,store.WithLease(grantRes.ID))
 	if err != nil {
 		logs.Logger.Error("SetSoreAccessToken failure", zap.Any("error_msg", err))
 		return false
@@ -74,7 +85,10 @@ func (EtcdImpl) GetSoreAccessToken(ctx context.Context) (string, bool) {
 	for _, item := range response.Kvs {
 		result = string(item.Value)
 	}
-	logs.Logger.Debug("GetSoreAccessToken success result", zap.Any("result", result))
+	if result == "" {
+		logs.Logger.Warn("GetSoreAccessToken success result,but result is empty", zap.Any("result", result))
+		return result,false
+	}
 	return result, true
 }
 

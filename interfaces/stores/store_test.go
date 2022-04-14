@@ -2,6 +2,7 @@ package stores
 
 import (
 	"context"
+	"fmt"
 	"testing"
 )
 
@@ -24,10 +25,12 @@ func TestEtcdImpl_SetSoreAccessToken(t *testing.T) {
 			want: true,
 		},
 	}
+	var s int64
+	fmt.Println(s)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			et := EtcdImpl{}
-			if got := et.SetSoreAccessToken(tt.args.ctx, tt.args.token); got != tt.want {
+			if got := et.SetSoreAccessToken(tt.args.ctx, tt.args.token,10); got != tt.want {
 				t.Errorf("SetSoreAccessToken() = %v, want %v", got, tt.want)
 			}
 		})
