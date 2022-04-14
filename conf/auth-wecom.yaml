@@ -5,16 +5,9 @@ WeCom:
   CorpID:
   CorpSecret:
   AgentId:
-redis:
-  server:
-  port:
-  username:
-  password:
-  DB: 0
-  MaxRetries: 2
-  PoolSize: 30
-  ReadTimeout: 1
-  WriteTimeout: 1
-  MaxConnAge: 100
+
+etcd:
+  endpoints:
+    - "localhost:2379"
 
 

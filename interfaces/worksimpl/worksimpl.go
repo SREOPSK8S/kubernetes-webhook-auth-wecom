@@ -34,7 +34,7 @@ type WorkChatImpl struct {
 
 
 func (w *WorkChatImpl) GetServerAccessToken(secret wecom.CorpIDAndSecret) (accessToken string, status bool) {
-	var store wecom.StoreAccessToken = stores.RedisImpl{}
+	var store wecom.StoreAccessToken = stores.EtcdImpl{}
 	if  ACCESS_TOKEN_EXPIRE.Before(time.Now()) {
 		result , ok := w.GetAccessTokenFromWorkChat(secret)
 		status = ok

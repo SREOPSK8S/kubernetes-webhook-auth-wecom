@@ -1,53 +1,83 @@
 package stores
 
 import (
+	"context"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/wecom"
-	"github.com/go-redis/redis/v8"
-	"kubernetes-webhook-auth-wecom/vendor/github.com/go-redis/redis/v8"
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/interfaces/logs"
+	store "go.etcd.io/etcd/client/v3"
+	"go.uber.org/zap"
+	"time"
 )
 
-var _ wecom.StoreAccessToken = RedisImpl{}
+var _ wecom.StoreAccessToken = EtcdImpl{}
 
-type RedisImpl struct {
+func NewStore() *store.Client {
+	client, err := store.New(store.Config{
+		Endpoints:            []string{"localhost:2379"},
+		DialTimeout:          3 * time.Second,
+		DialKeepAliveTime:    3 * time.Second,
+		DialKeepAliveTimeout: 5 * time.Second,
+		MaxCallSendMsgSize:   0,
+		MaxCallRecvMsgSize:   0,
+	})
+	if err != nil {
+		logs.Logger.Error("create store client is error", zap.Any("error_msg", err))
+		return nil
+	}
+	return client
 }
 
-func (RedisImpl) DeleteAccessToken() error {
+type EtcdImpl struct {
+}
 
+func (EtcdImpl) DeleteAccessToken() error {
 	return nil
 }
 
-func (RedisImpl) GetSoreAccessToken() (string, bool) {
-
-	return "", true
+func (EtcdImpl) GetSoreAccessToken() (string, bool) {
+	result := ""
+	ctx := context.Background()
+	client := NewStore()
+	if client == nil {
+		return "", false
+	}
+	response, err := client.Get(ctx, "")
+	if err != nil {
+		logs.Logger.Error("GetSoreAccessToken failure", zap.Any("error_msg", err))
+		return "", false
+	}
+	defer func() {
+		err := client.Close()
+		if err != nil {
+			logs.Logger.Error("store client close  failure", zap.Any("error_msg", err))
+			return
+		}
+	}()
+	logs.Logger.Info("GetSoreAccessToken success", zap.Any("response", response))
+	for _, item := range response.Kvs {
+		result = string(item.Value)
+	}
+	return result, true
 }
 
-func (RedisImpl) SetSoreAccessToken(token string) bool {
+func (EtcdImpl) SetSoreAccessToken(token string) bool {
+	ctx := context.Background()
+	client := NewStore()
+	if client == nil {
+		return false
+	}
+	defer func() {
+		err := client.Close()
+		if err != nil {
+			logs.Logger.Error("store client close  failure", zap.Any("error_msg", err))
+			return
+		}
+	}()
+	response, err := client.Put(ctx, "", token)
+	if err != nil {
+		logs.Logger.Error("SetSoreAccessToken failure", zap.Any("error_msg", err))
+		return false
+	}
+	logs.Logger.Info("SetSoreAccessToken success", zap.Any("response", response))
 	return true
-}
-
-func GetStoreClient() {
-	client := redis.NewClient(&redis.Options{
-		Addr:               "",
-		Dialer:             nil,
-		OnConnect:          nil,
-		Username:           "",
-		Password:           "",
-		DB:                 0,
-		MaxRetries:         0,
-		MinRetryBackoff:    0,
-		MaxRetryBackoff:    0,
-		DialTimeout:        0,
-		ReadTimeout:        0,
-		WriteTimeout:       0,
-		PoolFIFO:           false,
-		PoolSize:           0,
-		MinIdleConns:       0,
-		MaxConnAge:         0,
-		PoolTimeout:        0,
-		IdleTimeout:        0,
-		IdleCheckFrequency: 0,
-		TLSConfig:          nil,
-		Limiter:            nil,
-	})
-	_ =client
 }
