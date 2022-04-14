@@ -13,7 +13,7 @@ var _ wecom.StoreAccessToken = EtcdImpl{}
 
 func NewStore() *store.Client {
 	client, err := store.New(store.Config{
-		Endpoints:            []string{"localhost:2379"},
+		Endpoints:            []string{"172.16.100.99:2379"},
 		DialTimeout:          3 * time.Second,
 		DialKeepAliveTime:    3 * time.Second,
 		DialKeepAliveTimeout: 5 * time.Second,
@@ -29,19 +29,36 @@ func NewStore() *store.Client {
 
 type EtcdImpl struct {
 }
-
-func (EtcdImpl) DeleteAccessToken() error {
-	return nil
+func (EtcdImpl) SetSoreAccessToken(ctx context.Context,token string) bool {
+	client := NewStore()
+	if client == nil {
+		return false
+	}
+	defer func() {
+		err := client.Close()
+		if err != nil {
+			logs.Logger.Error("store client close  failure", zap.Any("error_msg", err))
+			return
+		}
+	}()
+	accessTokenName := wecom.WorkChatAccessTokenKeyName
+	response, err := client.Put(ctx, accessTokenName, token)
+	if err != nil {
+		logs.Logger.Error("SetSoreAccessToken failure", zap.Any("error_msg", err))
+		return false
+	}
+	logs.Logger.Info("SetSoreAccessToken success", zap.Any("response", response))
+	return true
 }
 
-func (EtcdImpl) GetSoreAccessToken() (string, bool) {
+func (EtcdImpl) GetSoreAccessToken(ctx context.Context) (string, bool) {
 	result := ""
-	ctx := context.Background()
 	client := NewStore()
 	if client == nil {
 		return "", false
 	}
-	response, err := client.Get(ctx, "")
+	accessTokenName := wecom.WorkChatAccessTokenKeyName
+	response, err := client.Get(ctx, accessTokenName)
 	if err != nil {
 		logs.Logger.Error("GetSoreAccessToken failure", zap.Any("error_msg", err))
 		return "", false
@@ -53,31 +70,25 @@ func (EtcdImpl) GetSoreAccessToken() (string, bool) {
 			return
 		}
 	}()
-	logs.Logger.Info("GetSoreAccessToken success", zap.Any("response", response))
+	logs.Logger.Debug("GetSoreAccessToken success", zap.Any("response", response))
 	for _, item := range response.Kvs {
 		result = string(item.Value)
 	}
+	logs.Logger.Info("GetSoreAccessToken result", zap.Any("result", result))
 	return result, true
 }
 
-func (EtcdImpl) SetSoreAccessToken(token string) bool {
-	ctx := context.Background()
+func (EtcdImpl) DeleteAccessToken(ctx context.Context) bool {
 	client := NewStore()
 	if client == nil {
 		return false
 	}
-	defer func() {
-		err := client.Close()
-		if err != nil {
-			logs.Logger.Error("store client close  failure", zap.Any("error_msg", err))
-			return
-		}
-	}()
-	response, err := client.Put(ctx, "", token)
+	accessTokenName := wecom.WorkChatAccessTokenKeyName
+	response, err := client.Delete(ctx, accessTokenName)
 	if err != nil {
-		logs.Logger.Error("SetSoreAccessToken failure", zap.Any("error_msg", err))
 		return false
 	}
-	logs.Logger.Info("SetSoreAccessToken success", zap.Any("response", response))
+	logs.Logger.Info("DeleteAccessToken response", zap.Any("response", response))
 	return true
 }
+
