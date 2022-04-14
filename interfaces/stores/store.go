@@ -74,7 +74,7 @@ func (EtcdImpl) GetSoreAccessToken(ctx context.Context) (string, bool) {
 	for _, item := range response.Kvs {
 		result = string(item.Value)
 	}
-	logs.Logger.Info("GetSoreAccessToken result", zap.Any("result", result))
+	logs.Logger.Debug("GetSoreAccessToken success result", zap.Any("result", result))
 	return result, true
 }
 

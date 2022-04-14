@@ -1,6 +1,7 @@
 package worksimpl
 
 import (
+	"context"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/auth"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/interfs"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/wecom"
@@ -34,17 +35,29 @@ type WorkChatImpl struct {
 
 
 func (w *WorkChatImpl) GetServerAccessToken(secret wecom.CorpIDAndSecret) (accessToken string, status bool) {
+	ctx := context.Background()
 	var store wecom.StoreAccessToken = stores.EtcdImpl{}
 	if  ACCESS_TOKEN_EXPIRE.Before(time.Now()) {
 		result , ok := w.GetAccessTokenFromWorkChat(secret)
 		status = ok
 		accessToken = result.AccessToken
 		// todo 写入缓存中
-		store.SetSoreAccessToken(accessToken)
+		setStatus := store.SetSoreAccessToken(ctx,accessToken)
+		if setStatus != true {
+			logs.Logger.Error("Store SetSoreAccessToken Token failure")
+		}
 		return
 	}
 	// todo 从缓存读取
-	return "",true
+	storeToken, ok :=store.GetSoreAccessToken(ctx)
+	if !ok || storeToken == "" {
+		newResult,sts := w.GetAccessTokenFromWorkChat(secret)
+		if !sts {
+			logs.Logger.Error("Get GetSoreAccessToken Token failure", zap.Any("response", newResult))
+			return
+		}
+	}
+	return storeToken,ok
 }
 
 

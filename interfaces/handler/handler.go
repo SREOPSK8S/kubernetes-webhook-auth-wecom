@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/config"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/auth"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/interfs"
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/wecom"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/interfaces/logs"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/interfaces/worksimpl"
 	"github.com/gin-gonic/gin"
@@ -27,12 +29,28 @@ func TokenRequest(c *gin.Context) {
 		zap.String("host", c.Request.Host),
 		zap.String("remoteAddr", c.Request.RemoteAddr))
 	var valid  interfs.AuthenticationUserInfo =&worksimpl.WorkChatImpl{}
-	status := valid.TokenReviewVerify(tr)
-	if status{
-		response := valid.TokenReviewSuccess(tr)
-		logs.Logger.Info("response data", zap.Any("response", response))
-		c.JSON(200, response)
+	var server wecom.ServerAccessToken = &worksimpl.WorkChatImpl{}
+	secrt := wecom.CorpIDAndSecret{
+		CorpID:     config.GetCorpID(),
+		CorpSecret: config.GetCorpSecret(),
+	}
+	data, ok := server.GetServerAccessToken(secrt)
+	if !ok {
+		c.JSON(500, "服务器未知错误")
 		return
 	}
-	c.JSON(403,valid.TokenReviewFailure(tr))
+	wroks := &worksimpl.WorkChatImpl{
+		AccessTokenMap: map[string]string{
+			"access_token":data,
+		},
+		SuccessResponse: secrt.NewReadMemberResponse(),
+	}
+	status := wroks.TokenReviewVerify(tr)
+	if !status{
+		c.JSON(403,valid.TokenReviewFailure(tr))
+		return
+	}
+	response := wroks.TokenReviewSuccess(tr)
+	logs.Logger.Info("response data", zap.Any("response", response))
+	c.JSON(200, response)
 }

@@ -21,3 +21,9 @@ func (IDS *CorpIDAndSecret)GetCorpIDAndSecret() *CorpIDAndSecret {
 		CorpSecret: IDS.CorpSecret,
 	}
 }
+
+func(IDS *CorpIDAndSecret) NewReadMemberResponse() *ReadMemberResponse {
+	return &ReadMemberResponse{
+		Department: []int{},
+	}
+}
