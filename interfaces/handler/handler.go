@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/config"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/auth"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/interfs"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/wecom"
@@ -30,11 +29,7 @@ func TokenRequest(c *gin.Context) {
 		zap.String("remoteAddr", c.Request.RemoteAddr))
 	var valid  interfs.AuthenticationUserInfo =&worksimpl.WorkChatImpl{}
 	var server wecom.ServerAccessToken = &worksimpl.WorkChatImpl{}
-	secrt := wecom.CorpIDAndSecret{
-		CorpID:     config.GetCorpID(),
-		CorpSecret: config.GetCorpSecret(),
-	}
-	data, ok := server.GetServerAccessToken(secrt)
+	data, ok := server.GetServerAccessToken()
 	if !ok {
 		c.JSON(500, "服务器未知错误")
 		return
@@ -43,7 +38,7 @@ func TokenRequest(c *gin.Context) {
 		AccessTokenMap: map[string]string{
 			"access_token":data,
 		},
-		SuccessResponse: secrt.NewReadMemberResponse(),
+		SuccessResponse: worksimpl.NewReadMemberResponse(),
 	}
 	status := wroks.TokenReviewVerify(tr)
 	if !status{

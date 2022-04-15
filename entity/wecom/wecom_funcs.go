@@ -22,8 +22,3 @@ func (IDS *CorpIDAndSecret)GetCorpIDAndSecret() *CorpIDAndSecret {
 	}
 }
 
-func(IDS *CorpIDAndSecret) NewReadMemberResponse() *ReadMemberResponse {
-	return &ReadMemberResponse{
-		Department: []int{},
-	}
-}

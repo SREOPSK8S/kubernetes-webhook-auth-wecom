@@ -46,7 +46,7 @@ type Department struct {
 }
 
 type ServerAccessToken interface {
-	GetServerAccessToken(CorpIDAndSecret) (accessTokenAccess string, status bool)
+	GetServerAccessToken() (accessTokenAccess string, status bool)
 }
 
 const (
