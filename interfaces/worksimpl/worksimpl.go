@@ -141,7 +141,7 @@ func (w *WorkChatImpl) GetReadMember(token string) (status bool, readMemberRespo
 			deleteExpireToken.DeleteAccessToken(context.Background())
 			_, sts := w.GetServerAccessToken()
 			if sts {
-				logs.Logger.Info("token already expire,get new access token success", zap.Any("response", readMemberResponse))
+				logs.Logger.Info("token already expire,get new access token success")
 				return
 			}
 			return
