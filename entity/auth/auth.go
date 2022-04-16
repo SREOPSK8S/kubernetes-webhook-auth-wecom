@@ -6,6 +6,7 @@ import (
 )
 
 // pkg/apis/authentication/types.go
+// staging/src/k8s.io/api/authentication/v1beta1/types.go
 
 type TokenReview struct {
 	metav1.TypeMeta
@@ -27,22 +28,26 @@ type TokenReviewResponse  struct {
 
 type TokenReviewSpec struct {
 	// Token is the opaque bearer token.
-	Token string `json:"token"`
+	// +optional
+	Token string `json:"token,omitempty" protobuf:"bytes,1,opt,name=token"`
 	// Audiences is a list of the identifiers that the resource server presented
 	// with the token identifies as. Audience-aware token authenticators will
 	// verify that the token was intended for at least one of the audiences in
 	// this list. If no audiences are provided, the audience will default to the
 	// audience of the Kubernetes apiserver.
-	Audiences []string `json:"-"`
+	// +optional
+	Audiences []string `json:"audiences,omitempty" protobuf:"bytes,2,rep,name=audiences"`
 }
 
 // TokenReviewStatus is the result of the token authentication request.
 // This type mirrors the authentication.Token interfs
 type TokenReviewStatus struct {
 	// Authenticated indicates that the token was associated with a known user.
-	Authenticated bool `json:"authenticated"`
+	// +optional
+	Authenticated bool `json:"authenticated,omitempty" protobuf:"varint,1,opt,name=authenticated"`
 	// User is the UserInfo associated with the provided token.
-	User UserInfo `json:"user"`
+	// +optional
+	User UserInfo `json:"user,omitempty" protobuf:"bytes,2,opt,name=user"`
 	// Audiences are audience identifiers chosen by the authenticator that are
 	// compatible with both the TokenReview and token. An identifier is any
 	// identifier in the intersection of the TokenReviewSpec audiences and the
@@ -52,22 +57,28 @@ type TokenReviewStatus struct {
 	// server is audience aware. If a TokenReview returns an empty
 	// status.audience field where status.authenticated is "true", the token is
 	// valid against the audience of the Kubernetes API server.
-	Audiences []string
+	// +optional
+	Audiences []string `json:"audiences,omitempty" protobuf:"bytes,4,rep,name=audiences"`
 	// Error indicates that the token couldn't be checked
-	Error string
+	// +optional
+	Error string `json:"error,omitempty" protobuf:"bytes,3,opt,name=error"`
 }
 
 type UserInfo struct {
 	// The name that uniquely identifies this user among all active users.
-	Username string `json:"username"`
+	// +optional
+	Username string `json:"username,omitempty" protobuf:"bytes,1,opt,name=username"`
 	// A unique value that identifies this user across time. If this user is
 	// deleted and another user by the same name is added, they will have
 	// different UIDs.
-	UID string `json:"uid"`
+	// +optional
+	UID string `json:"uid,omitempty" protobuf:"bytes,2,opt,name=uid"`
 	// The names of groups this user is a part of.
-	Groups []string `json:"groups"`
+	// +optional
+	Groups []string `json:"groups,omitempty" protobuf:"bytes,3,rep,name=groups"`
 	// Any additional information provided by the authenticator.
-	Extra map[string]ExtraValue
+	// +optional
+	Extra map[string]ExtraValue `json:"extra,omitempty" protobuf:"bytes,4,rep,name=extra"`
 }
 
 type ExtraValue []string
