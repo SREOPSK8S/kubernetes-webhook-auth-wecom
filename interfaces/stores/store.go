@@ -102,7 +102,7 @@ func (EtcdImpl) DeleteAccessToken(ctx context.Context) bool {
 	if err != nil {
 		return false
 	}
-	logs.Logger.Info("DeleteAccessToken response", zap.Any("response", response))
+	logs.Logger.Debug("DeleteAccessToken response", zap.Any("response", response))
 	return true
 }
 

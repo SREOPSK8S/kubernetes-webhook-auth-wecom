@@ -35,7 +35,7 @@ type WorkChatImpl struct {
 
 func (w *WorkChatImpl) GetServerAccessToken() (accessToken string, status bool) {
 	// 需要完成从cache里面获取
-	ctx := context.Background()
+	ctx := context.TODO()
 	var store wecom.StoreAccessToken = stores.EtcdImpl{}
 	// todo 从缓存读取
 	accessToken,status = store.GetSoreAccessToken(ctx)
@@ -138,7 +138,7 @@ func (w *WorkChatImpl) GetReadMember(token string) (status bool, readMemberRespo
 		//"response":{"errcode":42001,"errmsg":"access_token expired, more info at https://open.work.weixin.qq.com/devtool/query?e=42001"}
 		if readMemberResponse.ErrorCode == 42001 {
 			deleteExpireToken := stores.EtcdImpl{}
-			deleteExpireToken.DeleteAccessToken(context.Background())
+			deleteExpireToken.DeleteAccessToken(context.TODO())
 			_, sts := w.GetServerAccessToken()
 			if sts {
 				logs.Logger.Info("token already expire,get new access token success")
