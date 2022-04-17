@@ -54,17 +54,17 @@ func GetCorpSecret() (corpSecret string ){
 	return
 }
 
-func GetAgentId()  (agentID int64) {
+func GetAgentId()  (agentID int) {
 	agentIDEnv := os.Getenv("WeCom_AGENT_ID")
 	if agentIDEnv != "" {
 		tmpID ,err := strconv.Atoi(agentIDEnv)
 		if err != nil {
 			return
 		}
-		agentID = int64(tmpID)
+		agentID = tmpID
 		return
 	}
-	return viper.GetInt64("WeCom.AgentId")
+	return viper.GetInt("WeCom.AgentId")
 }
 
 func GetEtcdEndpoints() (endpoints []string){

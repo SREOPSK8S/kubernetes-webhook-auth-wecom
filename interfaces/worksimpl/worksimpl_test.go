@@ -1,4 +1,5 @@
 package worksimpl
+
 //
 //import (
 //	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/auth"
@@ -180,6 +181,48 @@ package worksimpl
 //			}
 //			if got := w.GetReadMember(tt.args.token); got != tt.want {
 //				t.Errorf("GetReadMember() = %v, want %v", got, tt.want)
+//			}
+//		})
+//	}
+//}
+
+//func TestWorkChatImpl_SendMsgToUser(t *testing.T) {
+//	type fields struct {
+//		AccessTokenMap  map[string]string
+//		SuccessResponse *wecom.ReadMemberResponse
+//	}
+//	type args struct {
+//		ctx   context.Context
+//		msg   string
+//		users []string
+//	}
+//	tests := []struct {
+//		name   string
+//		fields fields
+//		args   args
+//		want   bool
+//	}{
+//		// TODO: Add test cases.
+//		{
+//			fields: fields{
+//				AccessTokenMap: map[string]string{"access_token":"1234"},
+//				SuccessResponse: new(wecom.ReadMemberResponse),
+//			},
+//			args: args{
+//				ctx:   context.TODO(),
+//				msg:   "Hello 123",
+//				users: []string{"zhouchaoyang","zhouchaoyang01"},
+//			},
+//		},
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			w := &WorkChatImpl{
+//				AccessTokenMap:  tt.fields.AccessTokenMap,
+//				SuccessResponse: tt.fields.SuccessResponse,
+//			}
+//			if got := w.SendMsgToUser(tt.args.ctx, tt.args.msg, tt.args.users...); got != tt.want {
+//				t.Errorf("SendMsgToUser() = %v, want %v", got, tt.want)
 //			}
 //		})
 //	}

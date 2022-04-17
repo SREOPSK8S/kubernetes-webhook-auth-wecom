@@ -47,18 +47,47 @@ type Department struct {
 
 type ServerAccessToken interface {
 	GetServerAccessToken() (accessTokenAccess string, status bool)
+	SendMsgToUser(ctx context.Context,msg string,users ...string) bool
 }
 
 const (
-	WorkChatAccessTokenKeyName string = "workChatKubernetesAccessKey"                        // 设置访问企业微信access_token键
-	WorkChatAccessTokenExpire int64 = 7134
+	WorkChatAccessTokenKeyName string = "workChatKubernetesAccessKey" // 设置访问企业微信access_token键
+	WorkChatAccessTokenExpire  int64  = 7134
 	GetWorkChatAccessTokenURL  string = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"       // 获取access_token
 	GetReadMemberURL           string = "https://qyapi.weixin.qq.com/cgi-bin/user/get"       // 读取成员
 	GetDepartmentDetailsURL    string = "https://qyapi.weixin.qq.com/cgi-bin/department/get" // 获取单个部门详情
+	SendAppMessageURL          string = "https://qyapi.weixin.qq.com/cgi-bin/message/send"   // 发送应用消息
 )
 
 type StoreAccessToken interface {
-	SetSoreAccessToken(context.Context,string,int64) bool
+	SetSoreAccessToken(context.Context, string, int64) bool
 	GetSoreAccessToken(ctx context.Context) (string, bool)
 	DeleteAccessToken(ctx context.Context) bool
+}
+
+type WorkChatNotifyMsg interface {
+	SendMsgToUser(ctx context.Context, userID, msg string,users ...string) bool
+}
+
+type SendAppMessageTypeResponse struct {
+	BaseResponse
+	Invaliduser  string `json:"invaliduser"`
+	Invalidparty string `json:"invalidparty"`
+	Invalidtag   string `json:"invalidtag"`
+	Msgid        string `json:"msgid"`
+	ResponseCode string `json:"response_code"`
+}
+
+type SendAppMessageRequest struct {
+	Touser                 string                `json:"touser"`
+	Toparty                string                `json:"toparty,omitempty"`
+	Totag                  string                `json:"totag,omitempty"`
+	Msgtype                string                `json:"msgtype"`
+	Agentid                int                   `json:"agentid"`
+	Text                   MessageContent `json:"text"`
+	Safe                   int                   `json:"safe"`
+}
+
+type MessageContent struct {
+	Content string `json:"content"`
 }
