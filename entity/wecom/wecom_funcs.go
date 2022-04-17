@@ -21,3 +21,4 @@ func (IDS *CorpIDAndSecret)GetCorpIDAndSecret() *CorpIDAndSecret {
 		CorpSecret: IDS.CorpSecret,
 	}
 }
+

@@ -5,3 +5,9 @@ WeCom:
   CorpID:
   CorpSecret:
   AgentId:
+
+etcd:
+  endpoints:
+    - "localhost:2379"
+
+

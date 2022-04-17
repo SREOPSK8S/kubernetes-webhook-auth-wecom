@@ -66,3 +66,7 @@ func GetAgentId()  (agentID int64) {
 	}
 	return viper.GetInt64("WeCom.AgentId")
 }
+
+func GetEtcdEndpoints() (endpoints []string){
+	return viper.GetStringSlice("etcd.endpoints")
+}

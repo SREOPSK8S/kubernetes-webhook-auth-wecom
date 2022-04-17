@@ -1,5 +1,7 @@
 package wecom
 
+import "context"
+
 type CorpIDAndSecret struct {
 	CorpID     string
 	CorpSecret string
@@ -44,11 +46,19 @@ type Department struct {
 }
 
 type ServerAccessToken interface {
-	GetServerAccessToken(CorpIDAndSecret) (data *AccessTokenResponse, status bool)
+	GetServerAccessToken() (accessTokenAccess string, status bool)
 }
 
 const (
-	GetWorkChatAccessTokenURL string = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"       // 获取access_token
-	GetReadMemberURL          string = "https://qyapi.weixin.qq.com/cgi-bin/user/get"       // 读取成员
-	GetDepartmentDetailsURL   string = "https://qyapi.weixin.qq.com/cgi-bin/department/get" // 获取单个部门详情
+	WorkChatAccessTokenKeyName string = "workChatKubernetesAccessKey"                        // 设置访问企业微信access_token键
+	WorkChatAccessTokenExpire int64 = 7134
+	GetWorkChatAccessTokenURL  string = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"       // 获取access_token
+	GetReadMemberURL           string = "https://qyapi.weixin.qq.com/cgi-bin/user/get"       // 读取成员
+	GetDepartmentDetailsURL    string = "https://qyapi.weixin.qq.com/cgi-bin/department/get" // 获取单个部门详情
 )
+
+type StoreAccessToken interface {
+	SetSoreAccessToken(context.Context,string,int64) bool
+	GetSoreAccessToken(ctx context.Context) (string, bool)
+	DeleteAccessToken(ctx context.Context) bool
+}
