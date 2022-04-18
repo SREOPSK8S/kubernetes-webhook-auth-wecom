@@ -35,22 +35,19 @@ func (w *WorkChatImpl) SendMsgToUser(ctx context.Context, msg string, msgType st
 	toUsers := strings.Join(users, "|")
 	client := resty.New()
 	client.SetQueryParams(w.AccessTokenMap)
-	// todo 实现发送各种消息格式通知
 	typeRequest := wecom.GetMessageTypeRequest(msgType)
 	// 使用类型断言
+	// todo 获取GetAgentId 从内存中获取
+	agentID := config.GetAgentId()
 	BParamsText := new(wecom.SendAppMessageRequestText)
 	BParamsMarkDown := new(wecom.SendAppMessageMarkDownRequest)
 	switch typeRequestI := typeRequest.(type) {
 	case *wecom.SendAppMessageRequestText:
 		BParamsText = typeRequestI
-		BParamsText.Text.Content =msg
-		BParamsText.Touser = toUsers
-		BParamsText.Agentid = config.GetAgentId()
+		BParamsText.SetSendAppMessageRequestTextParam(msg,toUsers,agentID)
 	case *wecom.SendAppMessageMarkDownRequest:
 		BParamsMarkDown= typeRequestI
-		BParamsMarkDown.Touser = toUsers
-		BParamsMarkDown.Agentid = config.GetAgentId()
-		BParamsMarkDown.Markdown.Content = msg
+		BParamsMarkDown.SetSendAppMessageRequestMarkDownParam(msg,toUsers,agentID)
 	}
 	// 定义接口接收通用数据
 	var BParams interface{}
@@ -60,11 +57,6 @@ func (w *WorkChatImpl) SendMsgToUser(ctx context.Context, msg string, msgType st
 	case "markdown":
 		BParams = BParamsMarkDown
 	}
-	//BParams := wecom.GetSendAppMessageTextRequest()
-	// todo 获取GetAgentId 从内存中获取
-	//BParamsTextCard.Agentid = config.GetAgentId()
-	//BParams.Text.Content = msg
-	//BParams.Touser = toUsers
 	response, err := client.R().SetBody(BParams).SetResult(&result).Post(wecom.SendAppMessageURL)
 	if err != nil || result.ErrorCode != 0 && result.ErrorMessage != "ok" {
 		logs.Logger.Warn("SendMsgToUser failure", zap.Any("response", response))

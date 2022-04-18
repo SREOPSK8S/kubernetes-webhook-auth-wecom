@@ -78,6 +78,16 @@ func (appR *SendAppMessageRequestText) GetSendAppMessageRequestTextContent() str
 	return appR.Text.Content
 }
 
+func (appR *SendAppMessageRequestText) SetSendAppMessageRequestTextParam(msg string,users string,agentID int) {
+	appR.Text.Content = msg
+	appR.Touser = users
+	appR.Agentid =agentID
+}
+func (appR *SendAppMessageMarkDownRequest) SetSendAppMessageRequestMarkDownParam(msg string,users string,agentID int)   {
+	appR.Markdown.Content = msg
+	appR.Touser = users
+	appR.Agentid = agentID
+}
 func GetMessageTypeRequest(msgType string) interface{} {
 	switch msgType {
 	case TextMsgType:
