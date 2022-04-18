@@ -47,7 +47,7 @@ type Department struct {
 
 type ServerAccessToken interface {
 	GetServerAccessToken() (accessTokenAccess string, status bool)
-	SendMsgToUser(ctx context.Context,msg string,users ...string) bool
+	SendMsgToUser(ctx context.Context, msg string, users ...string) bool
 }
 
 const (
@@ -65,9 +65,6 @@ type StoreAccessToken interface {
 	DeleteAccessToken(ctx context.Context) bool
 }
 
-type WorkChatNotifyMsg interface {
-	SendMsgToUser(ctx context.Context, userID, msg string,users ...string) bool
-}
 
 type SendAppMessageTypeResponse struct {
 	BaseResponse
@@ -78,16 +75,35 @@ type SendAppMessageTypeResponse struct {
 	ResponseCode string `json:"response_code"`
 }
 
-type SendAppMessageRequest struct {
-	Touser                 string                `json:"touser"`
-	Toparty                string                `json:"toparty,omitempty"`
-	Totag                  string                `json:"totag,omitempty"`
-	Msgtype                string                `json:"msgtype"`
-	Agentid                int                   `json:"agentid"`
-	Text                   MessageContent `json:"text"`
-	Safe                   int                   `json:"safe"`
+type SendAppMessageBase struct {
+	Touser  string `json:"touser",omitempty`
+	Toparty string `json:"toparty,omitempty"`
+	Totag   string `json:"totag,omitempty"`
+	Msgtype string `json:"msgtype"`
+	Agentid int    `json:"agentid"`
+	Safe    int    `json:"safe"`
+}
+
+type SendAppMessageRequestText struct {
+	SendAppMessageBase
+	Text MessageContent `json:"text"`
 }
 
 type MessageContent struct {
 	Content string `json:"content"`
 }
+
+type WorkChatMsgType = string
+
+const (
+	TextMsgType WorkChatMsgType = "text"
+	ImageMsgType  WorkChatMsgType = "image"
+	VoiceMsgType WorkChatMsgType = "voice"
+	VideoMsgType WorkChatMsgType = "video"
+	FileMsgType WorkChatMsgType = "file"
+	TextCardMsgType WorkChatMsgType = "textcard"
+	NewsMsgType WorkChatMsgType = "news"
+	MpNewsMsgType WorkChatMsgType = "mpnews"
+	MiniProgramNoticeMsgType WorkChatMsgType = "miniprogram_notice"
+	TemplateCardMsgType WorkChatMsgType = "template_card"
+)

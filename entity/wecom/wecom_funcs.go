@@ -22,21 +22,23 @@ func (IDS *CorpIDAndSecret)GetCorpIDAndSecret() *CorpIDAndSecret {
 	}
 }
 
-func GetSendAppMessageRequest(msgType string) *SendAppMessageRequest {
-	return &SendAppMessageRequest{
-		Touser:  "",
-		Toparty: "",
-		Totag:   "",
-		Msgtype: msgType,
-		Agentid: 0,
-		Text:    MessageContent{},
-		Safe:    1,
+func GetSendAppMessageTextRequest() *SendAppMessageRequestText {
+	return &SendAppMessageRequestText{
+		SendAppMessageBase: SendAppMessageBase{
+			Touser:  "",
+			Toparty: "",
+			Totag:   "",
+			Msgtype: TextMsgType,
+			Agentid: 0,
+			Safe:    1,
+		},
+		Text:               MessageContent{},
 	}
 }
-func (appR *SendAppMessageRequest) GetSendAppMessageRequestMsgtype()  string {
+func (appR *SendAppMessageRequestText) GetSendAppMessageRequestMsgType()  string {
 	return appR.Msgtype
 }
 
-func (appR *SendAppMessageRequest) GetSendAppMessageRequestTextContent() string {
+func (appR *SendAppMessageRequestText) GetSendAppMessageRequestTextContent() string {
 	return appR.Text.Content
 }

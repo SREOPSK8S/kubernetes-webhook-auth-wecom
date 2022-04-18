@@ -37,20 +37,11 @@ func (w *WorkChatImpl) SendMsgToUser(ctx context.Context,  msg string, users ...
 	client := resty.New()
 	client.SetQueryParams(w.AccessTokenMap)
 	// todo 实现发送各种消息格式通知
-	BParams := wecom.GetSendAppMessageRequest("text")
+	BParams := wecom.GetSendAppMessageTextRequest()
 	// todo 获取GetAgentId 从内存中获取
 	BParams.Agentid = config.GetAgentId()
 	BParams.Text.Content = msg
 	BParams.Touser = toUsers
-	//bodyParams := wecom.SendAppMessageRequest{
-	//	Touser:                 toUsers,
-	//	Msgtype:                BParams.GetSendAppMessageRequestMsgtype(),
-	//	Agentid:                config.GetAgentId(),
-	//	Text:                   wecom.MessageContent{
-	//		Content: msg,
-	//	},
-	//	Safe:                   1,
-	//}
 	response, err := client.R().SetBody(BParams).SetResult(&result).Post(wecom.SendAppMessageURL)
 	if err != nil || result.ErrorCode != 0 && result.ErrorMessage != "ok" {
 		logs.Logger.Debug("SendMsgToUser failure", zap.Any("response", response))
