@@ -47,7 +47,7 @@ type Department struct {
 
 type ServerAccessToken interface {
 	GetServerAccessToken() (accessTokenAccess string, status bool)
-	SendMsgToUser(ctx context.Context, msg string, users ...string) bool
+	SendMsgToUser(ctx context.Context, msg,msgType string, users ...string) bool
 }
 
 const (
@@ -89,8 +89,20 @@ type SendAppMessageRequestText struct {
 	Text MessageContent `json:"text"`
 }
 
+type SendAppMessageTextCardRequest struct {
+	SendAppMessageBase
+	Textcard `json:"textcard"`
+}
+
+
 type MessageContent struct {
 	Content string `json:"content"`
+}
+type Textcard struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Url         string `json:"url"`
+	Btntxt      string `json:"btntxt"`
 }
 
 type WorkChatMsgType = string

@@ -20,10 +20,9 @@ import (
 var _ interfs.AuthenticationUserInfo = &WorkChatImpl{}
 var _ wecom.ServerAccessToken = &WorkChatImpl{}
 
-
 type TokenExpire struct {
 	ExpireTime time.Time
-	Lock sync.Locker
+	Lock       sync.Locker
 }
 
 type WorkChatImpl struct {
@@ -31,17 +30,43 @@ type WorkChatImpl struct {
 	SuccessResponse *wecom.ReadMemberResponse
 }
 
-func (w *WorkChatImpl) SendMsgToUser(ctx context.Context,  msg string, users ...string) bool {
+func (w *WorkChatImpl) SendMsgToUser(ctx context.Context, msg string, msgType string, users ...string) bool {
 	result := wecom.SendAppMessageTypeResponse{}
-	toUsers := strings.Join(users,"|")
+	toUsers := strings.Join(users, "|")
 	client := resty.New()
 	client.SetQueryParams(w.AccessTokenMap)
 	// todo 实现发送各种消息格式通知
-	BParams := wecom.GetSendAppMessageTextRequest()
+	typeRequest := wecom.GetMessageTypeRequest(msgType)
+	// 使用类型断言
+	BParamsText := new(wecom.SendAppMessageRequestText)
+	BParamsTextCard := new(wecom.SendAppMessageTextCardRequest)
+	switch typeRequestI := typeRequest.(type) {
+	case *wecom.SendAppMessageRequestText:
+		BParamsText = typeRequestI
+		BParamsText.Text.Content =msg
+		BParamsText.Touser = toUsers
+		BParamsText.Agentid = config.GetAgentId()
+	case *wecom.SendAppMessageTextCardRequest:
+		BParamsTextCard = typeRequestI
+		BParamsTextCard.Touser = toUsers
+		BParamsTextCard.Agentid = config.GetAgentId()
+		BParamsTextCard.Btntxt = "测试"
+		BParamsTextCard.Url = "https://www.baidu.com"
+		BParamsTextCard.Title = "Hello Kubernetes"
+		BParamsTextCard.Description = "Kubernetes"
+	}
+	// 定义接口接收通用数据
+	var BParams interface{}
+	if msgType == "text" {
+		BParams = BParamsText
+	} else {
+		BParams = BParamsTextCard
+	}
+	//BParams := wecom.GetSendAppMessageTextRequest()
 	// todo 获取GetAgentId 从内存中获取
-	BParams.Agentid = config.GetAgentId()
-	BParams.Text.Content = msg
-	BParams.Touser = toUsers
+	//BParamsTextCard.Agentid = config.GetAgentId()
+	//BParams.Text.Content = msg
+	//BParams.Touser = toUsers
 	response, err := client.R().SetBody(BParams).SetResult(&result).Post(wecom.SendAppMessageURL)
 	if err != nil || result.ErrorCode != 0 && result.ErrorMessage != "ok" {
 		logs.Logger.Debug("SendMsgToUser failure", zap.Any("response", response))
@@ -51,30 +76,28 @@ func (w *WorkChatImpl) SendMsgToUser(ctx context.Context,  msg string, users ...
 	return true
 }
 
-
 func (w *WorkChatImpl) GetServerAccessToken() (accessToken string, status bool) {
 	// 需要完成从cache里面获取
 	ctx := context.TODO()
 	var store wecom.StoreAccessToken = stores.EtcdImpl{}
 	// todo 从缓存读取
-	accessToken,status = store.GetSoreAccessToken(ctx)
-	if  !status || accessToken == "" {
+	accessToken, status = store.GetSoreAccessToken(ctx)
+	if !status || accessToken == "" {
 		// 不在缓存中，请求后端服务并重新写入缓存
-		result , ok := w.GetAccessTokenFromWorkChat()
+		result, ok := w.GetAccessTokenFromWorkChat()
 		status = ok
 		accessToken = result.AccessToken
 		// todo 写入缓存中
-		setStatus := store.SetSoreAccessToken(ctx,accessToken,wecom.WorkChatAccessTokenExpire)
+		setStatus := store.SetSoreAccessToken(ctx, accessToken, wecom.WorkChatAccessTokenExpire)
 		if setStatus != true {
 			logs.Logger.Error("Store SetSoreAccessToken Token failure")
 		}
 		return
 	}
-	return accessToken,status
+	return accessToken, status
 }
 
-
-func (w *WorkChatImpl)GetAccessTokenFromWorkChat() (result *wecom.AccessTokenResponse, status bool) {
+func (w *WorkChatImpl) GetAccessTokenFromWorkChat() (result *wecom.AccessTokenResponse, status bool) {
 	params := w.getAccessTokenFromWorkChatPre()
 	client := resty.New()
 	client.SetQueryParams(params)
@@ -89,7 +112,7 @@ func (w *WorkChatImpl)GetAccessTokenFromWorkChat() (result *wecom.AccessTokenRes
 	w.AccessTokenMap = map[string]string{}
 	w.AccessTokenMap["access_token"] = result.AccessToken
 	logs.Logger.Info("Get Token success", zap.Any("response", response))
-	return result,true
+	return result, true
 }
 
 func (WorkChatImpl) TokenReviewFailure(review auth.TokenReview) auth.TokenReviewResponse {
@@ -195,11 +218,11 @@ func (w *WorkChatImpl) GetDepartmentDetails() (nameList []string) {
 		}
 		nameList = append(nameList, result.Department.Name)
 	}
-	logs.Logger.Debug("GetDepartmentDetails success details",zap.String("uid",w.SuccessResponse.Userid),zap.Strings("department",nameList))
+	logs.Logger.Debug("GetDepartmentDetails success details", zap.String("uid", w.SuccessResponse.Userid), zap.Strings("department", nameList))
 	return
 }
 
-func (w *WorkChatImpl)getAccessTokenFromWorkChatPre() (params map[string]string){
+func (w *WorkChatImpl) getAccessTokenFromWorkChatPre() (params map[string]string) {
 	corpPre := wecom.CorpIDAndSecret{
 		CorpID:     config.GetCorpID(),
 		CorpSecret: config.GetCorpSecret(),
@@ -212,6 +235,6 @@ func (w *WorkChatImpl)getAccessTokenFromWorkChatPre() (params map[string]string)
 
 func NewReadMemberResponse() *wecom.ReadMemberResponse {
 	return &wecom.ReadMemberResponse{
-		Department:   []int{},
+		Department: []int{},
 	}
 }

@@ -35,10 +35,40 @@ func GetSendAppMessageTextRequest() *SendAppMessageRequestText {
 		Text:               MessageContent{},
 	}
 }
+
+func GetSendAppMessageTextCardRequest() *SendAppMessageTextCardRequest {
+	return &SendAppMessageTextCardRequest{
+		SendAppMessageBase: SendAppMessageBase{
+			Touser:  "",
+			Toparty: "",
+			Totag:   "",
+			Msgtype: TextCardMsgType,
+			Agentid: 0,
+			Safe:    1,
+		},
+		Textcard:           Textcard{
+			Title:       "",
+			Description: "",
+			Url:         "",
+			Btntxt:      "更多",
+		},
+	}
+}
 func (appR *SendAppMessageRequestText) GetSendAppMessageRequestMsgType()  string {
 	return appR.Msgtype
 }
 
 func (appR *SendAppMessageRequestText) GetSendAppMessageRequestTextContent() string {
 	return appR.Text.Content
+}
+
+func GetMessageTypeRequest(msgType string) interface{} {
+	switch msgType {
+	case TextMsgType:
+		return GetSendAppMessageTextRequest()
+	case TextCardMsgType:
+		// todo 完成TextCardMsgType 请求结构体
+		return GetSendAppMessageTextCardRequest()
+	}
+	return GetSendAppMessageTextRequest()
 }
