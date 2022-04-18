@@ -39,28 +39,26 @@ func (w *WorkChatImpl) SendMsgToUser(ctx context.Context, msg string, msgType st
 	typeRequest := wecom.GetMessageTypeRequest(msgType)
 	// 使用类型断言
 	BParamsText := new(wecom.SendAppMessageRequestText)
-	BParamsTextCard := new(wecom.SendAppMessageTextCardRequest)
+	BParamsMarkDown := new(wecom.SendAppMessageMarkDownRequest)
 	switch typeRequestI := typeRequest.(type) {
 	case *wecom.SendAppMessageRequestText:
 		BParamsText = typeRequestI
 		BParamsText.Text.Content =msg
 		BParamsText.Touser = toUsers
 		BParamsText.Agentid = config.GetAgentId()
-	case *wecom.SendAppMessageTextCardRequest:
-		BParamsTextCard = typeRequestI
-		BParamsTextCard.Touser = toUsers
-		BParamsTextCard.Agentid = config.GetAgentId()
-		BParamsTextCard.Btntxt = "测试"
-		BParamsTextCard.Url = "https://www.baidu.com"
-		BParamsTextCard.Title = "Hello Kubernetes"
-		BParamsTextCard.Description = "Kubernetes"
+	case *wecom.SendAppMessageMarkDownRequest:
+		BParamsMarkDown= typeRequestI
+		BParamsMarkDown.Touser = toUsers
+		BParamsMarkDown.Agentid = config.GetAgentId()
+		BParamsMarkDown.Markdown.Content = msg
 	}
 	// 定义接口接收通用数据
 	var BParams interface{}
-	if msgType == "text" {
+	switch msgType {
+	case "text":
 		BParams = BParamsText
-	} else {
-		BParams = BParamsTextCard
+	case "markdown":
+		BParams = BParamsMarkDown
 	}
 	//BParams := wecom.GetSendAppMessageTextRequest()
 	// todo 获取GetAgentId 从内存中获取
@@ -69,7 +67,7 @@ func (w *WorkChatImpl) SendMsgToUser(ctx context.Context, msg string, msgType st
 	//BParams.Touser = toUsers
 	response, err := client.R().SetBody(BParams).SetResult(&result).Post(wecom.SendAppMessageURL)
 	if err != nil || result.ErrorCode != 0 && result.ErrorMessage != "ok" {
-		logs.Logger.Debug("SendMsgToUser failure", zap.Any("response", response))
+		logs.Logger.Warn("SendMsgToUser failure", zap.Any("response", response))
 		return false
 	}
 	logs.Logger.Info("SendMsgToUser success", zap.Any("response", response))

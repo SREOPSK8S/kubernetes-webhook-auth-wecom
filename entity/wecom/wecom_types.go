@@ -93,7 +93,10 @@ type SendAppMessageTextCardRequest struct {
 	SendAppMessageBase
 	Textcard `json:"textcard"`
 }
-
+type SendAppMessageMarkDownRequest struct {
+	SendAppMessageBase
+	Markdown MessageContent `json:"markdown"`
+}
 
 type MessageContent struct {
 	Content string `json:"content"`
@@ -113,6 +116,7 @@ const (
 	VoiceMsgType WorkChatMsgType = "voice"
 	VideoMsgType WorkChatMsgType = "video"
 	FileMsgType WorkChatMsgType = "file"
+	MarkDownMsgType WorkChatMsgType  = "markdown"
 	TextCardMsgType WorkChatMsgType = "textcard"
 	NewsMsgType WorkChatMsgType = "news"
 	MpNewsMsgType WorkChatMsgType = "mpnews"

@@ -194,6 +194,7 @@ package worksimpl
 //	type args struct {
 //		ctx   context.Context
 //		msg   string
+//		msgType string
 //		users []string
 //	}
 //	tests := []struct {
@@ -205,14 +206,29 @@ package worksimpl
 //		// TODO: Add test cases.
 //		{
 //			fields: fields{
-//				AccessTokenMap: map[string]string{"access_token":"1234"},
+//				AccessTokenMap: map[string]string{"access_token":"123456"},
 //				SuccessResponse: new(wecom.ReadMemberResponse),
 //			},
 //			args: args{
 //				ctx:   context.TODO(),
 //				msg:   "Hello 123",
-//				users: []string{"zhouchaoyang","zhouchaoyang01"},
+//				msgType : "text",
+//				users: []string{"userID"},
 //			},
+//			want: ,
+//		},
+//		{
+//			fields: fields{
+//				AccessTokenMap: map[string]string{"access_token":"123456"},
+//				SuccessResponse: new(wecom.ReadMemberResponse),
+//			},
+//			args: args{
+//				ctx:   context.TODO(),
+//				msg:   "Hello 6666",
+//				msgType : "markdown",
+//				users: []string{"userID"},
+//			},
+//			want: true,
 //		},
 //	}
 //	for _, tt := range tests {
@@ -221,7 +237,7 @@ package worksimpl
 //				AccessTokenMap:  tt.fields.AccessTokenMap,
 //				SuccessResponse: tt.fields.SuccessResponse,
 //			}
-//			if got := w.SendMsgToUser(tt.args.ctx, tt.args.msg, tt.args.users...); got != tt.want {
+//			if got := w.SendMsgToUser(tt.args.ctx, tt.args.msg, tt.args.msgType,tt.args.users...); got != tt.want {
 //				t.Errorf("SendMsgToUser() = %v, want %v", got, tt.want)
 //			}
 //		})
