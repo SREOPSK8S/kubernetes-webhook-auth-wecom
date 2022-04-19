@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/wecom"
 	"github.com/spf13/viper"
 	"os"
 	"strconv"
@@ -20,7 +21,7 @@ func InitAndLoad() {
 func GetServerPort() (servicePort int) {
 	tmpPort := os.Getenv("SERVICE_PORT")
 	portVip := viper.GetInt("server.port")
-	if tmpPort == "" && portVip != 0  {
+	if tmpPort == "" && portVip != 0 {
 		return portVip
 	}
 	portStr, err := strconv.Atoi(tmpPort)
@@ -35,7 +36,7 @@ func GetServerPort() (servicePort int) {
 }
 
 func GetCorpID() (corpID string) {
-	corpIDEnv := os.Getenv("CORP_ID")
+	corpIDEnv := os.Getenv(wecom.CorpIDEnvKey)
 	if corpIDEnv != "" {
 		corpID = corpIDEnv
 		return
@@ -44,8 +45,8 @@ func GetCorpID() (corpID string) {
 	return
 }
 
-func GetCorpSecret() (corpSecret string ){
-	corpSecretEnv :=  os.Getenv("CORP_SECRET")
+func GetCorpSecret() (corpSecret string) {
+	corpSecretEnv := os.Getenv(wecom.CorpSecretEnvKey)
 	if corpSecretEnv != "" {
 		corpSecret = corpSecretEnv
 		return
@@ -54,10 +55,10 @@ func GetCorpSecret() (corpSecret string ){
 	return
 }
 
-func GetAgentId()  (agentID int) {
-	agentIDEnv := os.Getenv("WeCom_AGENT_ID")
+func GetAgentId() (agentID int) {
+	agentIDEnv := os.Getenv(wecom.AgentIDEnvKey)
 	if agentIDEnv != "" {
-		tmpID ,err := strconv.Atoi(agentIDEnv)
+		tmpID, err := strconv.Atoi(agentIDEnv)
 		if err != nil {
 			return
 		}
@@ -67,6 +68,6 @@ func GetAgentId()  (agentID int) {
 	return viper.GetInt("WeCom.AgentId")
 }
 
-func GetEtcdEndpoints() (endpoints []string){
+func GetEtcdEndpoints() (endpoints []string) {
 	return viper.GetStringSlice("etcd.endpoints")
 }

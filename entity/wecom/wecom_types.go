@@ -47,7 +47,7 @@ type Department struct {
 
 type ServerAccessToken interface {
 	GetServerAccessToken() (accessTokenAccess string, status bool)
-	SendMsgToUser(ctx context.Context, msg,msgType string, users ...string) bool
+	SendMsgToUser(ctx context.Context, msg, msgType string, users ...string) bool
 }
 
 const (
@@ -64,7 +64,6 @@ type StoreAccessToken interface {
 	GetSoreAccessToken(ctx context.Context) (string, bool)
 	DeleteAccessToken(ctx context.Context) bool
 }
-
 
 type SendAppMessageTypeResponse struct {
 	BaseResponse
@@ -111,15 +110,21 @@ type Textcard struct {
 type WorkChatMsgType = string
 
 const (
-	TextMsgType WorkChatMsgType = "text"
-	ImageMsgType  WorkChatMsgType = "image"
-	VoiceMsgType WorkChatMsgType = "voice"
-	VideoMsgType WorkChatMsgType = "video"
-	FileMsgType WorkChatMsgType = "file"
-	MarkDownMsgType WorkChatMsgType  = "markdown"
-	TextCardMsgType WorkChatMsgType = "textcard"
-	NewsMsgType WorkChatMsgType = "news"
-	MpNewsMsgType WorkChatMsgType = "mpnews"
+	TextMsgType              WorkChatMsgType = "text"
+	ImageMsgType             WorkChatMsgType = "image"
+	VoiceMsgType             WorkChatMsgType = "voice"
+	VideoMsgType             WorkChatMsgType = "video"
+	FileMsgType              WorkChatMsgType = "file"
+	MarkDownMsgType          WorkChatMsgType = "markdown"
+	TextCardMsgType          WorkChatMsgType = "textcard"
+	NewsMsgType              WorkChatMsgType = "news"
+	MpNewsMsgType            WorkChatMsgType = "mpnews"
 	MiniProgramNoticeMsgType WorkChatMsgType = "miniprogram_notice"
-	TemplateCardMsgType WorkChatMsgType = "template_card"
+	TemplateCardMsgType      WorkChatMsgType = "template_card"
+)
+
+const (
+	CorpIDEnvKey     string = "CORP_ID"
+	CorpSecretEnvKey string = "CORP_SECRET"
+	AgentIDEnvKey    string = "APP_AGENT_ID"
 )
