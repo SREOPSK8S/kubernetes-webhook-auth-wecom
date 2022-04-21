@@ -14,15 +14,33 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 )
 
 var _ interfs.AuthenticationUserInfo = &WorkChatImpl{}
 var _ wecom.ServerAccessToken = &WorkChatImpl{}
+var _ wecom.StoreAgentID = & AppAgentID{}
+type AppAgentID struct {
+	once sync.Once
+	Locker sync.RWMutex
+	AgentID int
+}
 
-type TokenExpire struct {
-	ExpireTime time.Time
-	Lock       sync.Locker
+func (a *AppAgentID) SetStoreAgentID(ctx context.Context) bool {
+	a.AgentID = config.GetAgentId()
+	client := stores.NewStore()
+	defer a.Locker.RUnlock()
+	a.Locker.RLocker()
+	response, err := client.Put(ctx,wecom.WorkChatAppAgentIDKeyName,strconv.Itoa(a.AgentID))
+	if err != nil {
+		logs.Logger.Error("SetStoreAgentID failure", zap.Any("error_msg", err))
+		return false
+	}
+	logs.Logger.Info("SetStoreAgentID success", zap.Any("response", response))
+	return true
+}
+
+func (a *AppAgentID) GetStoreAgentID(ctx context.Context) (int, bool) {
+	return 0,true
 }
 
 type WorkChatImpl struct {
