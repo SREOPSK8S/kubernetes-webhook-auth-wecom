@@ -11,7 +11,6 @@ import (
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubernetes-webhook-auth-wecom/vendor/github.com/go-resty/resty/v2"
 	"strconv"
 	"strings"
 	"sync"
