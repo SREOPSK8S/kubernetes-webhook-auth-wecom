@@ -57,6 +57,7 @@ const (
 	GetReadMemberURL           string = "https://qyapi.weixin.qq.com/cgi-bin/user/get"       // 读取成员
 	GetDepartmentDetailsURL    string = "https://qyapi.weixin.qq.com/cgi-bin/department/get" // 获取单个部门详情
 	SendAppMessageURL          string = "https://qyapi.weixin.qq.com/cgi-bin/message/send"   // 发送应用消息
+	WorkChatAppAgentIDKeyName  string = "workChatAppAgentID"  // 设置访问AgentIDKey名称
 )
 
 type StoreAccessToken interface {

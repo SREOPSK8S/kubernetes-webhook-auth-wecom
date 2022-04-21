@@ -11,6 +11,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"kubernetes-webhook-auth-wecom/vendor/github.com/go-resty/resty/v2"
 	"strconv"
 	"strings"
 	"sync"
@@ -141,6 +142,7 @@ func (w *WorkChatImpl) TokenReviewSuccess(review auth.TokenReview) (successRespo
 		Status: reviewStatus,
 	}
 	// todo 消息推送给用户，通知用户结果
+	//w.SendMsgToUser(context.TODO(),"auth success","markdown",w.SuccessResponse.Userid)
 	return
 }
 

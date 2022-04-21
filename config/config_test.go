@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/entity/wecom"
 	"os"
 	"testing"
 )
@@ -61,14 +62,14 @@ func TestGetServerPort(t *testing.T) {
 func TestGetAgentId(t *testing.T) {
 	tests := []struct {
 		name        string
-		wantAgentID int64
+		wantAgentID int
 	}{
 		{
 			name: "GetAgentId",
 			wantAgentID: 1001,
 		},
 	}
-	err := os.Setenv("WeCom_AGENT_ID","1001")
+	err := os.Setenv(wecom.AgentIDEnvKey,"1001")
 	if err != nil{
 		t.Fatalf("set WeCom_AGENT_ID to env %v\n",err)
 	}
