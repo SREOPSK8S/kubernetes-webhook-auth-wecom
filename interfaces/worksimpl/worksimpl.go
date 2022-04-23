@@ -19,18 +19,21 @@ import (
 var _ interfs.AuthenticationUserInfo = &WorkChatImpl{}
 var _ wecom.ServerAccessToken = &WorkChatImpl{}
 var _ wecom.StoreAgentID = & AppAgentID{}
+
 type AppAgentID struct {
 	once sync.Once
 	Locker sync.RWMutex
 	AgentID int
 }
+var agentID int = config.GetAgentId()
+
 
 func (a *AppAgentID) SetStoreAgentID(ctx context.Context) bool {
 	a.AgentID = config.GetAgentId()
 	client := stores.NewStore()
-	defer a.Locker.RUnlock()
-	a.Locker.RLocker()
-	response, err := client.Put(ctx,wecom.WorkChatAppAgentIDKeyName,strconv.Itoa(a.AgentID))
+	defer a.Locker.Unlock()
+	a.Locker.Lock()
+	response, err := client.Put(ctx,wecom.WorkChatAppAgentIDKeyName,strconv.Itoa(agentID))
 	if err != nil {
 		logs.Logger.Error("SetStoreAgentID failure", zap.Any("error_msg", err))
 		return false
@@ -38,9 +41,44 @@ func (a *AppAgentID) SetStoreAgentID(ctx context.Context) bool {
 	logs.Logger.Info("SetStoreAgentID success", zap.Any("response", response))
 	return true
 }
+func (a *AppAgentID) InitStoreAgentID()  {
+	a.once.Do(func() {
+		a.SetStoreAgentID(context.TODO())
+	})
+}
 
 func (a *AppAgentID) GetStoreAgentID(ctx context.Context) (int, bool) {
-	return 0,true
+	result := ""
+	client := stores.NewStore()
+	if client == nil {
+		return 0, false
+	}
+	agentIDName := wecom.WorkChatAppAgentIDKeyName
+	response, err := client.Get(ctx, agentIDName)
+	if err != nil {
+		logs.Logger.Error("GetStoreAgentID failure", zap.Any("error_msg", err))
+		return 0, false
+	}
+	defer func() {
+		err := client.Close()
+		if err != nil {
+			logs.Logger.Error("store client close  failure", zap.Any("error_msg", err))
+			return
+		}
+	}()
+	logs.Logger.Debug("GetStoreAgentID success", zap.Any("response", response))
+	for _, item := range response.Kvs {
+		result = string(item.Value)
+	}
+	if result == "" {
+		logs.Logger.Warn("GetStoreAgentID success result,but result is empty", zap.Any("result", result))
+		return 0,false
+	}
+	ID, errs := strconv.Atoi(result)
+	if errs != nil {
+		return 0,false
+	}
+	return ID,true
 }
 
 type WorkChatImpl struct {
@@ -56,7 +94,7 @@ func (w *WorkChatImpl) SendMsgToUser(ctx context.Context, msg string, msgType st
 	typeRequest := wecom.GetMessageTypeRequest(msgType)
 	// 使用类型断言
 	// todo 获取GetAgentId 从内存中获取
-	agentID := config.GetAgentId()
+	// 使用sync.once去获取 AgentID
 	BParamsText := new(wecom.SendAppMessageRequestText)
 	BParamsMarkDown := new(wecom.SendAppMessageMarkDownRequest)
 	switch typeRequestI := typeRequest.(type) {
@@ -159,7 +197,7 @@ func (w *WorkChatImpl) TokenReviewSuccess(review auth.TokenReview) (successRespo
 		Status: reviewStatus,
 	}
 	// todo 消息推送给用户，通知用户结果
-	//w.SendMsgToUser(context.TODO(),"auth success","markdown",w.SuccessResponse.Userid)
+	w.SendMsgToUser(context.TODO(),"auth success","markdown",w.SuccessResponse.Userid)
 	return
 }
 
