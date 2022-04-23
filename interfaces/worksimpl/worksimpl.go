@@ -14,26 +14,27 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 var _ interfs.AuthenticationUserInfo = &WorkChatImpl{}
 var _ wecom.ServerAccessToken = &WorkChatImpl{}
-var _ wecom.StoreAgentID = & AppAgentID{}
+var _ wecom.StoreAgentID = &AppAgentID{}
 
 type AppAgentID struct {
-	once sync.Once
-	Locker sync.RWMutex
+	once    sync.Once
+	Locker  sync.RWMutex
 	AgentID int
 }
-var agentID int = config.GetAgentId()
 
+var agentID int = config.GetAgentId()
 
 func (a *AppAgentID) SetStoreAgentID(ctx context.Context) bool {
 	a.AgentID = config.GetAgentId()
 	client := stores.NewStore()
 	defer a.Locker.Unlock()
 	a.Locker.Lock()
-	response, err := client.Put(ctx,wecom.WorkChatAppAgentIDKeyName,strconv.Itoa(agentID))
+	response, err := client.Put(ctx, wecom.WorkChatAppAgentIDKeyName, strconv.Itoa(agentID))
 	if err != nil {
 		logs.Logger.Error("SetStoreAgentID failure", zap.Any("error_msg", err))
 		return false
@@ -41,7 +42,7 @@ func (a *AppAgentID) SetStoreAgentID(ctx context.Context) bool {
 	logs.Logger.Info("SetStoreAgentID success", zap.Any("response", response))
 	return true
 }
-func (a *AppAgentID) InitStoreAgentID()  {
+func (a *AppAgentID) InitStoreAgentID() {
 	a.once.Do(func() {
 		a.SetStoreAgentID(context.TODO())
 	})
@@ -72,13 +73,13 @@ func (a *AppAgentID) GetStoreAgentID(ctx context.Context) (int, bool) {
 	}
 	if result == "" {
 		logs.Logger.Warn("GetStoreAgentID success result,but result is empty", zap.Any("result", result))
-		return 0,false
+		return 0, false
 	}
 	ID, errs := strconv.Atoi(result)
 	if errs != nil {
-		return 0,false
+		return 0, false
 	}
-	return ID,true
+	return ID, true
 }
 
 type WorkChatImpl struct {
@@ -87,39 +88,45 @@ type WorkChatImpl struct {
 }
 
 func (w *WorkChatImpl) SendMsgToUser(ctx context.Context, msg string, msgType string, users ...string) bool {
-	result := wecom.SendAppMessageTypeResponse{}
-	toUsers := strings.Join(users, "|")
-	client := resty.New()
-	client.SetQueryParams(w.AccessTokenMap)
-	typeRequest := wecom.GetMessageTypeRequest(msgType)
-	// 使用类型断言
-	// todo 获取GetAgentId 从内存中获取
-	// 使用sync.once去获取 AgentID
-	BParamsText := new(wecom.SendAppMessageRequestText)
-	BParamsMarkDown := new(wecom.SendAppMessageMarkDownRequest)
-	switch typeRequestI := typeRequest.(type) {
-	case *wecom.SendAppMessageRequestText:
-		BParamsText = typeRequestI
-		BParamsText.SetSendAppMessageRequestTextParam(msg,toUsers,agentID)
-	case *wecom.SendAppMessageMarkDownRequest:
-		BParamsMarkDown= typeRequestI
-		BParamsMarkDown.SetSendAppMessageRequestMarkDownParam(msg,toUsers,agentID)
-	}
-	// 定义接口接收通用数据
-	var BParams interface{}
-	switch msgType {
-	case "text":
-		BParams = BParamsText
-	case "markdown":
-		BParams = BParamsMarkDown
-	}
-	response, err := client.R().SetBody(BParams).SetResult(&result).Post(wecom.SendAppMessageURL)
-	if err != nil || result.ErrorCode != 0 && result.ErrorMessage != "ok" {
-		logs.Logger.Warn("SendMsgToUser failure", zap.Any("response", response))
+	select {
+	case <-ctx.Done():
+		logs.Logger.Warn("Cancel SendMsgToUser to users",zap.Any("users",users))
 		return false
+	default:
+		result := wecom.SendAppMessageTypeResponse{}
+		toUsers := strings.Join(users, "|")
+		client := resty.New()
+		client.SetQueryParams(w.AccessTokenMap)
+		typeRequest := wecom.GetMessageTypeRequest(msgType)
+		// 使用类型断言
+		// todo 获取GetAgentId 从内存中获取
+		// 使用sync.once去获取 AgentID
+		BParamsText := new(wecom.SendAppMessageRequestText)
+		BParamsMarkDown := new(wecom.SendAppMessageMarkDownRequest)
+		switch typeRequestI := typeRequest.(type) {
+		case *wecom.SendAppMessageRequestText:
+			BParamsText = typeRequestI
+			BParamsText.SetSendAppMessageRequestTextParam(msg, toUsers, agentID)
+		case *wecom.SendAppMessageMarkDownRequest:
+			BParamsMarkDown = typeRequestI
+			BParamsMarkDown.SetSendAppMessageRequestMarkDownParam(msg, toUsers, agentID)
+		}
+		// 定义接口接收通用数据
+		var BParams interface{}
+		switch msgType {
+		case "text":
+			BParams = BParamsText
+		case "markdown":
+			BParams = BParamsMarkDown
+		}
+		response, err := client.R().SetBody(BParams).SetResult(&result).Post(wecom.SendAppMessageURL)
+		if err != nil || result.ErrorCode != 0 && result.ErrorMessage != "ok" {
+			logs.Logger.Warn("SendMsgToUser failure", zap.Any("response", response))
+			return false
+		}
+		logs.Logger.Info("SendMsgToUser success", zap.Any("response", response))
+		return true
 	}
-	logs.Logger.Info("SendMsgToUser success", zap.Any("response", response))
-	return true
 }
 
 func (w *WorkChatImpl) GetServerAccessToken() (accessToken string, status bool) {
@@ -197,7 +204,9 @@ func (w *WorkChatImpl) TokenReviewSuccess(review auth.TokenReview) (successRespo
 		Status: reviewStatus,
 	}
 	// todo 消息推送给用户，通知用户结果
-	w.SendMsgToUser(context.TODO(),"auth success","markdown",w.SuccessResponse.Userid)
+	ctxT, _ := context.WithTimeout(context.TODO(), time.Second*1)
+	//ctxT, _ := context.WithTimeout(context.TODO(), time.Microsecond*1)
+	go w.SendMsgToUser(ctxT, "auth success", "markdown", w.SuccessResponse.Userid)
 	return
 }
 
