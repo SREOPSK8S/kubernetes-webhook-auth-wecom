@@ -3,6 +3,7 @@ module github.com/SREOPSK8S/kubernetes-webhook-auth-wecom
 go 1.17
 
 require (
+	entgo.io/ent v0.10.1
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/spf13/viper v1.10.1

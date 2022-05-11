@@ -1,3 +1,10 @@
+# entgo.io/ent v0.10.1
+## explicit; go 1.17
+entgo.io/ent
+entgo.io/ent/schema
+entgo.io/ent/schema/edge
+entgo.io/ent/schema/field
+entgo.io/ent/schema/index
 # github.com/cespare/xxhash/v2 v2.1.2
 ## explicit; go 1.11
 # github.com/coreos/go-semver v0.3.0
