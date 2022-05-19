@@ -6,6 +6,7 @@ require (
 	entgo.io/ent v0.10.1
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-resty/resty/v2 v2.7.0
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/spf13/viper v1.10.1
 	go.etcd.io/etcd/client/v3 v3.5.3
 	go.uber.org/zap v1.21.0

@@ -15,9 +15,9 @@ type Message struct {
 // Fields of the Message.
 func (Message) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("m_id"),
-		field.String("content"),
-		field.Time("created_at").Immutable().Default(time.Now),
+		field.String("m_id").Unique().Comment("msg id"),
+		field.String("content").Comment("msg content"),
+		field.Time("created_at").Immutable().Default(time.Now).Comment("msg create time"),
 	}
 }
 

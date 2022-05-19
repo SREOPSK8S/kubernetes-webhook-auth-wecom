@@ -18,10 +18,13 @@ type Message struct {
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
 	// MID holds the value of the "m_id" field.
+	// msg id
 	MID string `json:"m_id,omitempty"`
 	// Content holds the value of the "content" field.
+	// msg content
 	Content string `json:"content,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
+	// msg create time
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the MessageQuery when eager-loading is set.

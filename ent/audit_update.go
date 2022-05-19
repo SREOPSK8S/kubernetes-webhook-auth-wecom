@@ -61,14 +61,6 @@ func (au *AuditUpdate) SetUpdatedAt(t time.Time) *AuditUpdate {
 	return au
 }
 
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (au *AuditUpdate) SetNillableUpdatedAt(t *time.Time) *AuditUpdate {
-	if t != nil {
-		au.SetUpdatedAt(*t)
-	}
-	return au
-}
-
 // AddMessageIDs adds the "messages" edge to the Message entity by IDs.
 func (au *AuditUpdate) AddMessageIDs(ids ...int) *AuditUpdate {
 	au.mutation.AddMessageIDs(ids...)
@@ -116,6 +108,7 @@ func (au *AuditUpdate) Save(ctx context.Context) (int, error) {
 		err      error
 		affected int
 	)
+	au.defaults()
 	if len(au.hooks) == 0 {
 		affected, err = au.sqlSave(ctx)
 	} else {
@@ -161,6 +154,14 @@ func (au *AuditUpdate) Exec(ctx context.Context) error {
 func (au *AuditUpdate) ExecX(ctx context.Context) {
 	if err := au.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (au *AuditUpdate) defaults() {
+	if _, ok := au.mutation.UpdatedAt(); !ok {
+		v := audit.UpdateDefaultUpdatedAt()
+		au.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -314,14 +315,6 @@ func (auo *AuditUpdateOne) SetUpdatedAt(t time.Time) *AuditUpdateOne {
 	return auo
 }
 
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (auo *AuditUpdateOne) SetNillableUpdatedAt(t *time.Time) *AuditUpdateOne {
-	if t != nil {
-		auo.SetUpdatedAt(*t)
-	}
-	return auo
-}
-
 // AddMessageIDs adds the "messages" edge to the Message entity by IDs.
 func (auo *AuditUpdateOne) AddMessageIDs(ids ...int) *AuditUpdateOne {
 	auo.mutation.AddMessageIDs(ids...)
@@ -376,6 +369,7 @@ func (auo *AuditUpdateOne) Save(ctx context.Context) (*Audit, error) {
 		err  error
 		node *Audit
 	)
+	auo.defaults()
 	if len(auo.hooks) == 0 {
 		node, err = auo.sqlSave(ctx)
 	} else {
@@ -421,6 +415,14 @@ func (auo *AuditUpdateOne) Exec(ctx context.Context) error {
 func (auo *AuditUpdateOne) ExecX(ctx context.Context) {
 	if err := auo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (auo *AuditUpdateOne) defaults() {
+	if _, ok := auo.mutation.UpdatedAt(); !ok {
+		v := audit.UpdateDefaultUpdatedAt()
+		auo.mutation.SetUpdatedAt(v)
 	}
 }
 

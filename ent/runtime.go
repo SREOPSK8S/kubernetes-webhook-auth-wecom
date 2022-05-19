@@ -24,6 +24,8 @@ func init() {
 	auditDescUpdatedAt := auditFields[4].Descriptor()
 	// audit.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	audit.DefaultUpdatedAt = auditDescUpdatedAt.Default.(func() time.Time)
+	// audit.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	audit.UpdateDefaultUpdatedAt = auditDescUpdatedAt.UpdateDefault.(func() time.Time)
 	messageFields := schema.Message{}.Fields()
 	_ = messageFields
 	// messageDescCreatedAt is the schema descriptor for created_at field.

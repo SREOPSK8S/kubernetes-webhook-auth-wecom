@@ -20,7 +20,7 @@ func (Audit) Fields() []ent.Field {
 		field.String("m_id").Immutable(),
 		field.Time("certification_time").Optional().SchemaType(map[string]string{dialect.MySQL: "datetime",}),
 		field.Time("created_at").Default(time.Now).Immutable(),
-		field.Time("updated_at").Default(time.Now),
+		field.Time("updated_at").Default(time.Now).UpdateDefault(time.Now),
 	}
 }
 
