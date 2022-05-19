@@ -2,18 +2,46 @@
 
 package message
 
+import (
+	"time"
+)
+
 const (
 	// Label holds the string label denoting the message type in the database.
 	Label = "message"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldMID holds the string denoting the m_id field in the database.
+	FieldMID = "m_id"
+	// FieldContent holds the string denoting the content field in the database.
+	FieldContent = "content"
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
+	FieldCreatedAt = "created_at"
+	// EdgeOwner holds the string denoting the owner edge name in mutations.
+	EdgeOwner = "owner"
 	// Table holds the table name of the message in the database.
 	Table = "messages"
+	// OwnerTable is the table that holds the owner relation/edge.
+	OwnerTable = "messages"
+	// OwnerInverseTable is the table name for the Audit entity.
+	// It exists in this package in order to avoid circular dependency with the "audit" package.
+	OwnerInverseTable = "audits"
+	// OwnerColumn is the table column denoting the owner relation/edge.
+	OwnerColumn = "audit_messages"
 )
 
 // Columns holds all SQL columns for message fields.
 var Columns = []string{
 	FieldID,
+	FieldMID,
+	FieldContent,
+	FieldCreatedAt,
+}
+
+// ForeignKeys holds the SQL foreign-keys that are owned by the "messages"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"audit_messages",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -23,5 +51,15 @@ func ValidColumn(column string) bool {
 			return true
 		}
 	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
 	return false
 }
+
+var (
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
+	DefaultCreatedAt func() time.Time
+)

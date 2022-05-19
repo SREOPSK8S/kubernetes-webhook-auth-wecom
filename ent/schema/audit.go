@@ -2,6 +2,8 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"time"
 )
@@ -15,7 +17,8 @@ type Audit struct {
 func (Audit) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("u_id"),
-		field.Time("certification_time"),
+		field.String("m_id").Immutable(),
+		field.Time("certification_time").Optional().SchemaType(map[string]string{dialect.MySQL: "datetime",}),
 		field.Time("created_at").Default(time.Now).Immutable(),
 		field.Time("updated_at").Default(time.Now),
 	}
@@ -23,5 +26,7 @@ func (Audit) Fields() []ent.Field {
 
 // Edges of the Audit.
 func (Audit) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.To("messages",Message.Type),
+	}
 }

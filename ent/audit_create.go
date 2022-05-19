@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/audit"
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/message"
 )
 
 // AuditCreate is the builder for creating a Audit entity.
@@ -26,9 +27,23 @@ func (ac *AuditCreate) SetUID(s string) *AuditCreate {
 	return ac
 }
 
+// SetMID sets the "m_id" field.
+func (ac *AuditCreate) SetMID(s string) *AuditCreate {
+	ac.mutation.SetMID(s)
+	return ac
+}
+
 // SetCertificationTime sets the "certification_time" field.
 func (ac *AuditCreate) SetCertificationTime(t time.Time) *AuditCreate {
 	ac.mutation.SetCertificationTime(t)
+	return ac
+}
+
+// SetNillableCertificationTime sets the "certification_time" field if the given value is not nil.
+func (ac *AuditCreate) SetNillableCertificationTime(t *time.Time) *AuditCreate {
+	if t != nil {
+		ac.SetCertificationTime(*t)
+	}
 	return ac
 }
 
@@ -58,6 +73,21 @@ func (ac *AuditCreate) SetNillableUpdatedAt(t *time.Time) *AuditCreate {
 		ac.SetUpdatedAt(*t)
 	}
 	return ac
+}
+
+// AddMessageIDs adds the "messages" edge to the Message entity by IDs.
+func (ac *AuditCreate) AddMessageIDs(ids ...int) *AuditCreate {
+	ac.mutation.AddMessageIDs(ids...)
+	return ac
+}
+
+// AddMessages adds the "messages" edges to the Message entity.
+func (ac *AuditCreate) AddMessages(m ...*Message) *AuditCreate {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return ac.AddMessageIDs(ids...)
 }
 
 // Mutation returns the AuditMutation object of the builder.
@@ -146,8 +176,8 @@ func (ac *AuditCreate) check() error {
 	if _, ok := ac.mutation.UID(); !ok {
 		return &ValidationError{Name: "u_id", err: errors.New(`ent: missing required field "Audit.u_id"`)}
 	}
-	if _, ok := ac.mutation.CertificationTime(); !ok {
-		return &ValidationError{Name: "certification_time", err: errors.New(`ent: missing required field "Audit.certification_time"`)}
+	if _, ok := ac.mutation.MID(); !ok {
+		return &ValidationError{Name: "m_id", err: errors.New(`ent: missing required field "Audit.m_id"`)}
 	}
 	if _, ok := ac.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Audit.created_at"`)}
@@ -190,6 +220,14 @@ func (ac *AuditCreate) createSpec() (*Audit, *sqlgraph.CreateSpec) {
 		})
 		_node.UID = value
 	}
+	if value, ok := ac.mutation.MID(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: audit.FieldMID,
+		})
+		_node.MID = value
+	}
 	if value, ok := ac.mutation.CertificationTime(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeTime,
@@ -213,6 +251,25 @@ func (ac *AuditCreate) createSpec() (*Audit, *sqlgraph.CreateSpec) {
 			Column: audit.FieldUpdatedAt,
 		})
 		_node.UpdatedAt = value
+	}
+	if nodes := ac.mutation.MessagesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   audit.MessagesTable,
+			Columns: []string{audit.MessagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: message.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

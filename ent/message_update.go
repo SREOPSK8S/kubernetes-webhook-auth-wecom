@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/audit"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/message"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/predicate"
 )
@@ -27,9 +28,46 @@ func (mu *MessageUpdate) Where(ps ...predicate.Message) *MessageUpdate {
 	return mu
 }
 
+// SetMID sets the "m_id" field.
+func (mu *MessageUpdate) SetMID(s string) *MessageUpdate {
+	mu.mutation.SetMID(s)
+	return mu
+}
+
+// SetContent sets the "content" field.
+func (mu *MessageUpdate) SetContent(s string) *MessageUpdate {
+	mu.mutation.SetContent(s)
+	return mu
+}
+
+// SetOwnerID sets the "owner" edge to the Audit entity by ID.
+func (mu *MessageUpdate) SetOwnerID(id int) *MessageUpdate {
+	mu.mutation.SetOwnerID(id)
+	return mu
+}
+
+// SetNillableOwnerID sets the "owner" edge to the Audit entity by ID if the given value is not nil.
+func (mu *MessageUpdate) SetNillableOwnerID(id *int) *MessageUpdate {
+	if id != nil {
+		mu = mu.SetOwnerID(*id)
+	}
+	return mu
+}
+
+// SetOwner sets the "owner" edge to the Audit entity.
+func (mu *MessageUpdate) SetOwner(a *Audit) *MessageUpdate {
+	return mu.SetOwnerID(a.ID)
+}
+
 // Mutation returns the MessageMutation object of the builder.
 func (mu *MessageUpdate) Mutation() *MessageMutation {
 	return mu.mutation
+}
+
+// ClearOwner clears the "owner" edge to the Audit entity.
+func (mu *MessageUpdate) ClearOwner() *MessageUpdate {
+	mu.mutation.ClearOwner()
+	return mu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -104,6 +142,55 @@ func (mu *MessageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := mu.mutation.MID(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: message.FieldMID,
+		})
+	}
+	if value, ok := mu.mutation.Content(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: message.FieldContent,
+		})
+	}
+	if mu.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   message.OwnerTable,
+			Columns: []string{message.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: audit.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := mu.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   message.OwnerTable,
+			Columns: []string{message.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: audit.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, mu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{message.Label}
@@ -123,9 +210,46 @@ type MessageUpdateOne struct {
 	mutation *MessageMutation
 }
 
+// SetMID sets the "m_id" field.
+func (muo *MessageUpdateOne) SetMID(s string) *MessageUpdateOne {
+	muo.mutation.SetMID(s)
+	return muo
+}
+
+// SetContent sets the "content" field.
+func (muo *MessageUpdateOne) SetContent(s string) *MessageUpdateOne {
+	muo.mutation.SetContent(s)
+	return muo
+}
+
+// SetOwnerID sets the "owner" edge to the Audit entity by ID.
+func (muo *MessageUpdateOne) SetOwnerID(id int) *MessageUpdateOne {
+	muo.mutation.SetOwnerID(id)
+	return muo
+}
+
+// SetNillableOwnerID sets the "owner" edge to the Audit entity by ID if the given value is not nil.
+func (muo *MessageUpdateOne) SetNillableOwnerID(id *int) *MessageUpdateOne {
+	if id != nil {
+		muo = muo.SetOwnerID(*id)
+	}
+	return muo
+}
+
+// SetOwner sets the "owner" edge to the Audit entity.
+func (muo *MessageUpdateOne) SetOwner(a *Audit) *MessageUpdateOne {
+	return muo.SetOwnerID(a.ID)
+}
+
 // Mutation returns the MessageMutation object of the builder.
 func (muo *MessageUpdateOne) Mutation() *MessageMutation {
 	return muo.mutation
+}
+
+// ClearOwner clears the "owner" edge to the Audit entity.
+func (muo *MessageUpdateOne) ClearOwner() *MessageUpdateOne {
+	muo.mutation.ClearOwner()
+	return muo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -223,6 +347,55 @@ func (muo *MessageUpdateOne) sqlSave(ctx context.Context) (_node *Message, err e
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := muo.mutation.MID(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: message.FieldMID,
+		})
+	}
+	if value, ok := muo.mutation.Content(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: message.FieldContent,
+		})
+	}
+	if muo.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   message.OwnerTable,
+			Columns: []string{message.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: audit.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := muo.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   message.OwnerTable,
+			Columns: []string{message.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: audit.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Message{config: muo.config}
 	_spec.Assign = _node.assignValues

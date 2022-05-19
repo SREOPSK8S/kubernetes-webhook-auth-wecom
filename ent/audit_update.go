@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/audit"
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/message"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/predicate"
 )
 
@@ -40,6 +41,20 @@ func (au *AuditUpdate) SetCertificationTime(t time.Time) *AuditUpdate {
 	return au
 }
 
+// SetNillableCertificationTime sets the "certification_time" field if the given value is not nil.
+func (au *AuditUpdate) SetNillableCertificationTime(t *time.Time) *AuditUpdate {
+	if t != nil {
+		au.SetCertificationTime(*t)
+	}
+	return au
+}
+
+// ClearCertificationTime clears the value of the "certification_time" field.
+func (au *AuditUpdate) ClearCertificationTime() *AuditUpdate {
+	au.mutation.ClearCertificationTime()
+	return au
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (au *AuditUpdate) SetUpdatedAt(t time.Time) *AuditUpdate {
 	au.mutation.SetUpdatedAt(t)
@@ -54,9 +69,45 @@ func (au *AuditUpdate) SetNillableUpdatedAt(t *time.Time) *AuditUpdate {
 	return au
 }
 
+// AddMessageIDs adds the "messages" edge to the Message entity by IDs.
+func (au *AuditUpdate) AddMessageIDs(ids ...int) *AuditUpdate {
+	au.mutation.AddMessageIDs(ids...)
+	return au
+}
+
+// AddMessages adds the "messages" edges to the Message entity.
+func (au *AuditUpdate) AddMessages(m ...*Message) *AuditUpdate {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return au.AddMessageIDs(ids...)
+}
+
 // Mutation returns the AuditMutation object of the builder.
 func (au *AuditUpdate) Mutation() *AuditMutation {
 	return au.mutation
+}
+
+// ClearMessages clears all "messages" edges to the Message entity.
+func (au *AuditUpdate) ClearMessages() *AuditUpdate {
+	au.mutation.ClearMessages()
+	return au
+}
+
+// RemoveMessageIDs removes the "messages" edge to Message entities by IDs.
+func (au *AuditUpdate) RemoveMessageIDs(ids ...int) *AuditUpdate {
+	au.mutation.RemoveMessageIDs(ids...)
+	return au
+}
+
+// RemoveMessages removes "messages" edges to Message entities.
+func (au *AuditUpdate) RemoveMessages(m ...*Message) *AuditUpdate {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return au.RemoveMessageIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -145,12 +196,72 @@ func (au *AuditUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: audit.FieldCertificationTime,
 		})
 	}
+	if au.mutation.CertificationTimeCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Column: audit.FieldCertificationTime,
+		})
+	}
 	if value, ok := au.mutation.UpdatedAt(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeTime,
 			Value:  value,
 			Column: audit.FieldUpdatedAt,
 		})
+	}
+	if au.mutation.MessagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   audit.MessagesTable,
+			Columns: []string{audit.MessagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: message.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := au.mutation.RemovedMessagesIDs(); len(nodes) > 0 && !au.mutation.MessagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   audit.MessagesTable,
+			Columns: []string{audit.MessagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: message.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := au.mutation.MessagesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   audit.MessagesTable,
+			Columns: []string{audit.MessagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: message.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, au.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -183,6 +294,20 @@ func (auo *AuditUpdateOne) SetCertificationTime(t time.Time) *AuditUpdateOne {
 	return auo
 }
 
+// SetNillableCertificationTime sets the "certification_time" field if the given value is not nil.
+func (auo *AuditUpdateOne) SetNillableCertificationTime(t *time.Time) *AuditUpdateOne {
+	if t != nil {
+		auo.SetCertificationTime(*t)
+	}
+	return auo
+}
+
+// ClearCertificationTime clears the value of the "certification_time" field.
+func (auo *AuditUpdateOne) ClearCertificationTime() *AuditUpdateOne {
+	auo.mutation.ClearCertificationTime()
+	return auo
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (auo *AuditUpdateOne) SetUpdatedAt(t time.Time) *AuditUpdateOne {
 	auo.mutation.SetUpdatedAt(t)
@@ -197,9 +322,45 @@ func (auo *AuditUpdateOne) SetNillableUpdatedAt(t *time.Time) *AuditUpdateOne {
 	return auo
 }
 
+// AddMessageIDs adds the "messages" edge to the Message entity by IDs.
+func (auo *AuditUpdateOne) AddMessageIDs(ids ...int) *AuditUpdateOne {
+	auo.mutation.AddMessageIDs(ids...)
+	return auo
+}
+
+// AddMessages adds the "messages" edges to the Message entity.
+func (auo *AuditUpdateOne) AddMessages(m ...*Message) *AuditUpdateOne {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return auo.AddMessageIDs(ids...)
+}
+
 // Mutation returns the AuditMutation object of the builder.
 func (auo *AuditUpdateOne) Mutation() *AuditMutation {
 	return auo.mutation
+}
+
+// ClearMessages clears all "messages" edges to the Message entity.
+func (auo *AuditUpdateOne) ClearMessages() *AuditUpdateOne {
+	auo.mutation.ClearMessages()
+	return auo
+}
+
+// RemoveMessageIDs removes the "messages" edge to Message entities by IDs.
+func (auo *AuditUpdateOne) RemoveMessageIDs(ids ...int) *AuditUpdateOne {
+	auo.mutation.RemoveMessageIDs(ids...)
+	return auo
+}
+
+// RemoveMessages removes "messages" edges to Message entities.
+func (auo *AuditUpdateOne) RemoveMessages(m ...*Message) *AuditUpdateOne {
+	ids := make([]int, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
+	}
+	return auo.RemoveMessageIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -312,12 +473,72 @@ func (auo *AuditUpdateOne) sqlSave(ctx context.Context) (_node *Audit, err error
 			Column: audit.FieldCertificationTime,
 		})
 	}
+	if auo.mutation.CertificationTimeCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Column: audit.FieldCertificationTime,
+		})
+	}
 	if value, ok := auo.mutation.UpdatedAt(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeTime,
 			Value:  value,
 			Column: audit.FieldUpdatedAt,
 		})
+	}
+	if auo.mutation.MessagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   audit.MessagesTable,
+			Columns: []string{audit.MessagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: message.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := auo.mutation.RemovedMessagesIDs(); len(nodes) > 0 && !auo.mutation.MessagesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   audit.MessagesTable,
+			Columns: []string{audit.MessagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: message.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := auo.mutation.MessagesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   audit.MessagesTable,
+			Columns: []string{audit.MessagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: message.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Audit{config: auo.config}
 	_spec.Assign = _node.assignValues

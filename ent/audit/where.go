@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/predicate"
 )
 
@@ -96,6 +97,13 @@ func IDLTE(id int) predicate.Audit {
 func UID(v string) predicate.Audit {
 	return predicate.Audit(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldUID), v))
+	})
+}
+
+// MID applies equality check predicate on the "m_id" field. It's identical to MIDEQ.
+func MID(v string) predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldMID), v))
 	})
 }
 
@@ -231,6 +239,117 @@ func UIDContainsFold(v string) predicate.Audit {
 	})
 }
 
+// MIDEQ applies the EQ predicate on the "m_id" field.
+func MIDEQ(v string) predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldMID), v))
+	})
+}
+
+// MIDNEQ applies the NEQ predicate on the "m_id" field.
+func MIDNEQ(v string) predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldMID), v))
+	})
+}
+
+// MIDIn applies the In predicate on the "m_id" field.
+func MIDIn(vs ...string) predicate.Audit {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Audit(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldMID), v...))
+	})
+}
+
+// MIDNotIn applies the NotIn predicate on the "m_id" field.
+func MIDNotIn(vs ...string) predicate.Audit {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Audit(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldMID), v...))
+	})
+}
+
+// MIDGT applies the GT predicate on the "m_id" field.
+func MIDGT(v string) predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldMID), v))
+	})
+}
+
+// MIDGTE applies the GTE predicate on the "m_id" field.
+func MIDGTE(v string) predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldMID), v))
+	})
+}
+
+// MIDLT applies the LT predicate on the "m_id" field.
+func MIDLT(v string) predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldMID), v))
+	})
+}
+
+// MIDLTE applies the LTE predicate on the "m_id" field.
+func MIDLTE(v string) predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldMID), v))
+	})
+}
+
+// MIDContains applies the Contains predicate on the "m_id" field.
+func MIDContains(v string) predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldMID), v))
+	})
+}
+
+// MIDHasPrefix applies the HasPrefix predicate on the "m_id" field.
+func MIDHasPrefix(v string) predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldMID), v))
+	})
+}
+
+// MIDHasSuffix applies the HasSuffix predicate on the "m_id" field.
+func MIDHasSuffix(v string) predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldMID), v))
+	})
+}
+
+// MIDEqualFold applies the EqualFold predicate on the "m_id" field.
+func MIDEqualFold(v string) predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldMID), v))
+	})
+}
+
+// MIDContainsFold applies the ContainsFold predicate on the "m_id" field.
+func MIDContainsFold(v string) predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldMID), v))
+	})
+}
+
 // CertificationTimeEQ applies the EQ predicate on the "certification_time" field.
 func CertificationTimeEQ(v time.Time) predicate.Audit {
 	return predicate.Audit(func(s *sql.Selector) {
@@ -304,6 +423,20 @@ func CertificationTimeLT(v time.Time) predicate.Audit {
 func CertificationTimeLTE(v time.Time) predicate.Audit {
 	return predicate.Audit(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldCertificationTime), v))
+	})
+}
+
+// CertificationTimeIsNil applies the IsNil predicate on the "certification_time" field.
+func CertificationTimeIsNil() predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldCertificationTime)))
+	})
+}
+
+// CertificationTimeNotNil applies the NotNil predicate on the "certification_time" field.
+func CertificationTimeNotNil() predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldCertificationTime)))
 	})
 }
 
@@ -456,6 +589,34 @@ func UpdatedAtLT(v time.Time) predicate.Audit {
 func UpdatedAtLTE(v time.Time) predicate.Audit {
 	return predicate.Audit(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// HasMessages applies the HasEdge predicate on the "messages" edge.
+func HasMessages() predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MessagesTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MessagesTable, MessagesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMessagesWith applies the HasEdge predicate on the "messages" edge with a given conditions (other predicates).
+func HasMessagesWith(preds ...predicate.Message) predicate.Audit {
+	return predicate.Audit(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MessagesInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MessagesTable, MessagesColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
 	})
 }
 

@@ -14,6 +14,7 @@ import (
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -214,6 +215,22 @@ func (c *AuditClient) GetX(ctx context.Context, id int) *Audit {
 	return obj
 }
 
+// QueryMessages queries the messages edge of a Audit.
+func (c *AuditClient) QueryMessages(a *Audit) *MessageQuery {
+	query := &MessageQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := a.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(audit.Table, audit.FieldID, id),
+			sqlgraph.To(message.Table, message.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, audit.MessagesTable, audit.MessagesColumn),
+		)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *AuditClient) Hooks() []Hook {
 	return c.hooks.Audit
@@ -302,6 +319,22 @@ func (c *MessageClient) GetX(ctx context.Context, id int) *Message {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryOwner queries the owner edge of a Message.
+func (c *MessageClient) QueryOwner(m *Message) *AuditQuery {
+	query := &AuditQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(message.Table, message.FieldID, id),
+			sqlgraph.To(audit.Table, audit.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, message.OwnerTable, message.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.

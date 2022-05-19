@@ -4,10 +4,13 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/audit"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/message"
 )
 
@@ -16,6 +19,51 @@ type MessageCreate struct {
 	config
 	mutation *MessageMutation
 	hooks    []Hook
+}
+
+// SetMID sets the "m_id" field.
+func (mc *MessageCreate) SetMID(s string) *MessageCreate {
+	mc.mutation.SetMID(s)
+	return mc
+}
+
+// SetContent sets the "content" field.
+func (mc *MessageCreate) SetContent(s string) *MessageCreate {
+	mc.mutation.SetContent(s)
+	return mc
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (mc *MessageCreate) SetCreatedAt(t time.Time) *MessageCreate {
+	mc.mutation.SetCreatedAt(t)
+	return mc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (mc *MessageCreate) SetNillableCreatedAt(t *time.Time) *MessageCreate {
+	if t != nil {
+		mc.SetCreatedAt(*t)
+	}
+	return mc
+}
+
+// SetOwnerID sets the "owner" edge to the Audit entity by ID.
+func (mc *MessageCreate) SetOwnerID(id int) *MessageCreate {
+	mc.mutation.SetOwnerID(id)
+	return mc
+}
+
+// SetNillableOwnerID sets the "owner" edge to the Audit entity by ID if the given value is not nil.
+func (mc *MessageCreate) SetNillableOwnerID(id *int) *MessageCreate {
+	if id != nil {
+		mc = mc.SetOwnerID(*id)
+	}
+	return mc
+}
+
+// SetOwner sets the "owner" edge to the Audit entity.
+func (mc *MessageCreate) SetOwner(a *Audit) *MessageCreate {
+	return mc.SetOwnerID(a.ID)
 }
 
 // Mutation returns the MessageMutation object of the builder.
@@ -29,6 +77,7 @@ func (mc *MessageCreate) Save(ctx context.Context) (*Message, error) {
 		err  error
 		node *Message
 	)
+	mc.defaults()
 	if len(mc.hooks) == 0 {
 		if err = mc.check(); err != nil {
 			return nil, err
@@ -86,8 +135,25 @@ func (mc *MessageCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (mc *MessageCreate) defaults() {
+	if _, ok := mc.mutation.CreatedAt(); !ok {
+		v := message.DefaultCreatedAt()
+		mc.mutation.SetCreatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (mc *MessageCreate) check() error {
+	if _, ok := mc.mutation.MID(); !ok {
+		return &ValidationError{Name: "m_id", err: errors.New(`ent: missing required field "Message.m_id"`)}
+	}
+	if _, ok := mc.mutation.Content(); !ok {
+		return &ValidationError{Name: "content", err: errors.New(`ent: missing required field "Message.content"`)}
+	}
+	if _, ok := mc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Message.created_at"`)}
+	}
 	return nil
 }
 
@@ -115,6 +181,50 @@ func (mc *MessageCreate) createSpec() (*Message, *sqlgraph.CreateSpec) {
 			},
 		}
 	)
+	if value, ok := mc.mutation.MID(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: message.FieldMID,
+		})
+		_node.MID = value
+	}
+	if value, ok := mc.mutation.Content(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: message.FieldContent,
+		})
+		_node.Content = value
+	}
+	if value, ok := mc.mutation.CreatedAt(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: message.FieldCreatedAt,
+		})
+		_node.CreatedAt = value
+	}
+	if nodes := mc.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   message.OwnerTable,
+			Columns: []string{message.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: audit.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.audit_messages = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -132,6 +242,7 @@ func (mcb *MessageCreateBulk) Save(ctx context.Context) ([]*Message, error) {
 	for i := range mcb.builders {
 		func(i int, root context.Context) {
 			builder := mcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*MessageMutation)
 				if !ok {

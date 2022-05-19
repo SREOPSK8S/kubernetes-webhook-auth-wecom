@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/audit"
+	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/message"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/predicate"
 
 	"entgo.io/ent"
@@ -35,10 +36,14 @@ type AuditMutation struct {
 	typ                string
 	id                 *int
 	u_id               *string
+	m_id               *string
 	certification_time *time.Time
 	created_at         *time.Time
 	updated_at         *time.Time
 	clearedFields      map[string]struct{}
+	messages           map[int]struct{}
+	removedmessages    map[int]struct{}
+	clearedmessages    bool
 	done               bool
 	oldValue           func(context.Context) (*Audit, error)
 	predicates         []predicate.Audit
@@ -178,6 +183,42 @@ func (m *AuditMutation) ResetUID() {
 	m.u_id = nil
 }
 
+// SetMID sets the "m_id" field.
+func (m *AuditMutation) SetMID(s string) {
+	m.m_id = &s
+}
+
+// MID returns the value of the "m_id" field in the mutation.
+func (m *AuditMutation) MID() (r string, exists bool) {
+	v := m.m_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMID returns the old "m_id" field's value of the Audit entity.
+// If the Audit object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AuditMutation) OldMID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMID: %w", err)
+	}
+	return oldValue.MID, nil
+}
+
+// ResetMID resets all changes to the "m_id" field.
+func (m *AuditMutation) ResetMID() {
+	m.m_id = nil
+}
+
 // SetCertificationTime sets the "certification_time" field.
 func (m *AuditMutation) SetCertificationTime(t time.Time) {
 	m.certification_time = &t
@@ -209,9 +250,22 @@ func (m *AuditMutation) OldCertificationTime(ctx context.Context) (v time.Time, 
 	return oldValue.CertificationTime, nil
 }
 
+// ClearCertificationTime clears the value of the "certification_time" field.
+func (m *AuditMutation) ClearCertificationTime() {
+	m.certification_time = nil
+	m.clearedFields[audit.FieldCertificationTime] = struct{}{}
+}
+
+// CertificationTimeCleared returns if the "certification_time" field was cleared in this mutation.
+func (m *AuditMutation) CertificationTimeCleared() bool {
+	_, ok := m.clearedFields[audit.FieldCertificationTime]
+	return ok
+}
+
 // ResetCertificationTime resets all changes to the "certification_time" field.
 func (m *AuditMutation) ResetCertificationTime() {
 	m.certification_time = nil
+	delete(m.clearedFields, audit.FieldCertificationTime)
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -286,6 +340,60 @@ func (m *AuditMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
+// AddMessageIDs adds the "messages" edge to the Message entity by ids.
+func (m *AuditMutation) AddMessageIDs(ids ...int) {
+	if m.messages == nil {
+		m.messages = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.messages[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMessages clears the "messages" edge to the Message entity.
+func (m *AuditMutation) ClearMessages() {
+	m.clearedmessages = true
+}
+
+// MessagesCleared reports if the "messages" edge to the Message entity was cleared.
+func (m *AuditMutation) MessagesCleared() bool {
+	return m.clearedmessages
+}
+
+// RemoveMessageIDs removes the "messages" edge to the Message entity by IDs.
+func (m *AuditMutation) RemoveMessageIDs(ids ...int) {
+	if m.removedmessages == nil {
+		m.removedmessages = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.messages, ids[i])
+		m.removedmessages[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMessages returns the removed IDs of the "messages" edge to the Message entity.
+func (m *AuditMutation) RemovedMessagesIDs() (ids []int) {
+	for id := range m.removedmessages {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MessagesIDs returns the "messages" edge IDs in the mutation.
+func (m *AuditMutation) MessagesIDs() (ids []int) {
+	for id := range m.messages {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMessages resets all changes to the "messages" edge.
+func (m *AuditMutation) ResetMessages() {
+	m.messages = nil
+	m.clearedmessages = false
+	m.removedmessages = nil
+}
+
 // Where appends a list predicates to the AuditMutation builder.
 func (m *AuditMutation) Where(ps ...predicate.Audit) {
 	m.predicates = append(m.predicates, ps...)
@@ -305,9 +413,12 @@ func (m *AuditMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AuditMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.u_id != nil {
 		fields = append(fields, audit.FieldUID)
+	}
+	if m.m_id != nil {
+		fields = append(fields, audit.FieldMID)
 	}
 	if m.certification_time != nil {
 		fields = append(fields, audit.FieldCertificationTime)
@@ -328,6 +439,8 @@ func (m *AuditMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case audit.FieldUID:
 		return m.UID()
+	case audit.FieldMID:
+		return m.MID()
 	case audit.FieldCertificationTime:
 		return m.CertificationTime()
 	case audit.FieldCreatedAt:
@@ -345,6 +458,8 @@ func (m *AuditMutation) OldField(ctx context.Context, name string) (ent.Value, e
 	switch name {
 	case audit.FieldUID:
 		return m.OldUID(ctx)
+	case audit.FieldMID:
+		return m.OldMID(ctx)
 	case audit.FieldCertificationTime:
 		return m.OldCertificationTime(ctx)
 	case audit.FieldCreatedAt:
@@ -366,6 +481,13 @@ func (m *AuditMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUID(v)
+		return nil
+	case audit.FieldMID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMID(v)
 		return nil
 	case audit.FieldCertificationTime:
 		v, ok := value.(time.Time)
@@ -417,7 +539,11 @@ func (m *AuditMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *AuditMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(audit.FieldCertificationTime) {
+		fields = append(fields, audit.FieldCertificationTime)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -430,6 +556,11 @@ func (m *AuditMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *AuditMutation) ClearField(name string) error {
+	switch name {
+	case audit.FieldCertificationTime:
+		m.ClearCertificationTime()
+		return nil
+	}
 	return fmt.Errorf("unknown Audit nullable field %s", name)
 }
 
@@ -439,6 +570,9 @@ func (m *AuditMutation) ResetField(name string) error {
 	switch name {
 	case audit.FieldUID:
 		m.ResetUID()
+		return nil
+	case audit.FieldMID:
+		m.ResetMID()
 		return nil
 	case audit.FieldCertificationTime:
 		m.ResetCertificationTime()
@@ -455,49 +589,85 @@ func (m *AuditMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *AuditMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.messages != nil {
+		edges = append(edges, audit.EdgeMessages)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *AuditMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case audit.EdgeMessages:
+		ids := make([]ent.Value, 0, len(m.messages))
+		for id := range m.messages {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *AuditMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedmessages != nil {
+		edges = append(edges, audit.EdgeMessages)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *AuditMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case audit.EdgeMessages:
+		ids := make([]ent.Value, 0, len(m.removedmessages))
+		for id := range m.removedmessages {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *AuditMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedmessages {
+		edges = append(edges, audit.EdgeMessages)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *AuditMutation) EdgeCleared(name string) bool {
+	switch name {
+	case audit.EdgeMessages:
+		return m.clearedmessages
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *AuditMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Audit unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *AuditMutation) ResetEdge(name string) error {
+	switch name {
+	case audit.EdgeMessages:
+		m.ResetMessages()
+		return nil
+	}
 	return fmt.Errorf("unknown Audit edge %s", name)
 }
 
@@ -507,7 +677,12 @@ type MessageMutation struct {
 	op            Op
 	typ           string
 	id            *int
+	m_id          *string
+	content       *string
+	created_at    *time.Time
 	clearedFields map[string]struct{}
+	owner         *int
+	clearedowner  bool
 	done          bool
 	oldValue      func(context.Context) (*Message, error)
 	predicates    []predicate.Message
@@ -611,6 +786,153 @@ func (m *MessageMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
+// SetMID sets the "m_id" field.
+func (m *MessageMutation) SetMID(s string) {
+	m.m_id = &s
+}
+
+// MID returns the value of the "m_id" field in the mutation.
+func (m *MessageMutation) MID() (r string, exists bool) {
+	v := m.m_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMID returns the old "m_id" field's value of the Message entity.
+// If the Message object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MessageMutation) OldMID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMID: %w", err)
+	}
+	return oldValue.MID, nil
+}
+
+// ResetMID resets all changes to the "m_id" field.
+func (m *MessageMutation) ResetMID() {
+	m.m_id = nil
+}
+
+// SetContent sets the "content" field.
+func (m *MessageMutation) SetContent(s string) {
+	m.content = &s
+}
+
+// Content returns the value of the "content" field in the mutation.
+func (m *MessageMutation) Content() (r string, exists bool) {
+	v := m.content
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContent returns the old "content" field's value of the Message entity.
+// If the Message object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MessageMutation) OldContent(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldContent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldContent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContent: %w", err)
+	}
+	return oldValue.Content, nil
+}
+
+// ResetContent resets all changes to the "content" field.
+func (m *MessageMutation) ResetContent() {
+	m.content = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *MessageMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *MessageMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Message entity.
+// If the Message object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MessageMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *MessageMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetOwnerID sets the "owner" edge to the Audit entity by id.
+func (m *MessageMutation) SetOwnerID(id int) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Audit entity.
+func (m *MessageMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Audit entity was cleared.
+func (m *MessageMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *MessageMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *MessageMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *MessageMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
 // Where appends a list predicates to the MessageMutation builder.
 func (m *MessageMutation) Where(ps ...predicate.Message) {
 	m.predicates = append(m.predicates, ps...)
@@ -630,7 +952,16 @@ func (m *MessageMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MessageMutation) Fields() []string {
-	fields := make([]string, 0, 0)
+	fields := make([]string, 0, 3)
+	if m.m_id != nil {
+		fields = append(fields, message.FieldMID)
+	}
+	if m.content != nil {
+		fields = append(fields, message.FieldContent)
+	}
+	if m.created_at != nil {
+		fields = append(fields, message.FieldCreatedAt)
+	}
 	return fields
 }
 
@@ -638,6 +969,14 @@ func (m *MessageMutation) Fields() []string {
 // return value indicates that this field was not set, or was not defined in the
 // schema.
 func (m *MessageMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case message.FieldMID:
+		return m.MID()
+	case message.FieldContent:
+		return m.Content()
+	case message.FieldCreatedAt:
+		return m.CreatedAt()
+	}
 	return nil, false
 }
 
@@ -645,6 +984,14 @@ func (m *MessageMutation) Field(name string) (ent.Value, bool) {
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
 func (m *MessageMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case message.FieldMID:
+		return m.OldMID(ctx)
+	case message.FieldContent:
+		return m.OldContent(ctx)
+	case message.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
 	return nil, fmt.Errorf("unknown Message field %s", name)
 }
 
@@ -653,6 +1000,27 @@ func (m *MessageMutation) OldField(ctx context.Context, name string) (ent.Value,
 // type.
 func (m *MessageMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case message.FieldMID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMID(v)
+		return nil
+	case message.FieldContent:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContent(v)
+		return nil
+	case message.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Message field %s", name)
 }
@@ -674,6 +1042,8 @@ func (m *MessageMutation) AddedField(name string) (ent.Value, bool) {
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
 func (m *MessageMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Message numeric field %s", name)
 }
 
@@ -699,53 +1069,92 @@ func (m *MessageMutation) ClearField(name string) error {
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
 func (m *MessageMutation) ResetField(name string) error {
+	switch name {
+	case message.FieldMID:
+		m.ResetMID()
+		return nil
+	case message.FieldContent:
+		m.ResetContent()
+		return nil
+	case message.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown Message field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *MessageMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.owner != nil {
+		edges = append(edges, message.EdgeOwner)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *MessageMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case message.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *MessageMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *MessageMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *MessageMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedowner {
+		edges = append(edges, message.EdgeOwner)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *MessageMutation) EdgeCleared(name string) bool {
+	switch name {
+	case message.EdgeOwner:
+		return m.clearedowner
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *MessageMutation) ClearEdge(name string) error {
+	switch name {
+	case message.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	}
 	return fmt.Errorf("unknown Message unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *MessageMutation) ResetEdge(name string) error {
+	switch name {
+	case message.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	}
 	return fmt.Errorf("unknown Message edge %s", name)
 }
