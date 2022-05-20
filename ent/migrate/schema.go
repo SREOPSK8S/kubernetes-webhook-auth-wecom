@@ -10,8 +10,8 @@ import (
 var (
 	// AuditsColumns holds the columns for the "audits" table.
 	AuditsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "u_id", Type: field.TypeString},
+		{Name: "uuid", Type: field.TypeUUID},
+		{Name: "u_id", Type: field.TypeString, Unique: true},
 		{Name: "m_id", Type: field.TypeString},
 		{Name: "certification_time", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime"}},
 		{Name: "created_at", Type: field.TypeTime},
@@ -29,21 +29,12 @@ var (
 		{Name: "m_id", Type: field.TypeString, Unique: true},
 		{Name: "content", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "audit_messages", Type: field.TypeInt, Nullable: true},
 	}
 	// MessagesTable holds the schema information for the "messages" table.
 	MessagesTable = &schema.Table{
 		Name:       "messages",
 		Columns:    MessagesColumns,
 		PrimaryKey: []*schema.Column{MessagesColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "messages_audits_messages",
-				Columns:    []*schema.Column{MessagesColumns[4]},
-				RefColumns: []*schema.Column{AuditsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
@@ -53,5 +44,4 @@ var (
 )
 
 func init() {
-	MessagesTable.ForeignKeys[0].RefTable = AuditsTable
 }

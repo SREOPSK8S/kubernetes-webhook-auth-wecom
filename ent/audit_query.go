@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"database/sql/driver"
 	"errors"
 	"fmt"
 	"math"
@@ -13,8 +12,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/audit"
-	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/message"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/predicate"
+	"github.com/google/uuid"
 )
 
 // AuditQuery is the builder for querying Audit entities.
@@ -26,8 +25,6 @@ type AuditQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Audit
-	// eager-loading edges.
-	withMessages *MessageQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -64,28 +61,6 @@ func (aq *AuditQuery) Order(o ...OrderFunc) *AuditQuery {
 	return aq
 }
 
-// QueryMessages chains the current query on the "messages" edge.
-func (aq *AuditQuery) QueryMessages() *MessageQuery {
-	query := &MessageQuery{config: aq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := aq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := aq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(audit.Table, audit.FieldID, selector),
-			sqlgraph.To(message.Table, message.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, audit.MessagesTable, audit.MessagesColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // First returns the first Audit entity from the query.
 // Returns a *NotFoundError when no Audit was found.
 func (aq *AuditQuery) First(ctx context.Context) (*Audit, error) {
@@ -110,8 +85,8 @@ func (aq *AuditQuery) FirstX(ctx context.Context) *Audit {
 
 // FirstID returns the first Audit ID from the query.
 // Returns a *NotFoundError when no Audit ID was found.
-func (aq *AuditQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (aq *AuditQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = aq.Limit(1).IDs(ctx); err != nil {
 		return
 	}
@@ -123,7 +98,7 @@ func (aq *AuditQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (aq *AuditQuery) FirstIDX(ctx context.Context) int {
+func (aq *AuditQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := aq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -161,8 +136,8 @@ func (aq *AuditQuery) OnlyX(ctx context.Context) *Audit {
 // OnlyID is like Only, but returns the only Audit ID in the query.
 // Returns a *NotSingularError when more than one Audit ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (aq *AuditQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (aq *AuditQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+	var ids []uuid.UUID
 	if ids, err = aq.Limit(2).IDs(ctx); err != nil {
 		return
 	}
@@ -178,7 +153,7 @@ func (aq *AuditQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (aq *AuditQuery) OnlyIDX(ctx context.Context) int {
+func (aq *AuditQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := aq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -204,8 +179,8 @@ func (aq *AuditQuery) AllX(ctx context.Context) []*Audit {
 }
 
 // IDs executes the query and returns a list of Audit IDs.
-func (aq *AuditQuery) IDs(ctx context.Context) ([]int, error) {
-	var ids []int
+func (aq *AuditQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	var ids []uuid.UUID
 	if err := aq.Select(audit.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -213,7 +188,7 @@ func (aq *AuditQuery) IDs(ctx context.Context) ([]int, error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (aq *AuditQuery) IDsX(ctx context.Context) []int {
+func (aq *AuditQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := aq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -262,28 +237,16 @@ func (aq *AuditQuery) Clone() *AuditQuery {
 		return nil
 	}
 	return &AuditQuery{
-		config:       aq.config,
-		limit:        aq.limit,
-		offset:       aq.offset,
-		order:        append([]OrderFunc{}, aq.order...),
-		predicates:   append([]predicate.Audit{}, aq.predicates...),
-		withMessages: aq.withMessages.Clone(),
+		config:     aq.config,
+		limit:      aq.limit,
+		offset:     aq.offset,
+		order:      append([]OrderFunc{}, aq.order...),
+		predicates: append([]predicate.Audit{}, aq.predicates...),
 		// clone intermediate query.
 		sql:    aq.sql.Clone(),
 		path:   aq.path,
 		unique: aq.unique,
 	}
-}
-
-// WithMessages tells the query-builder to eager-load the nodes that are connected to
-// the "messages" edge. The optional arguments are used to configure the query builder of the edge.
-func (aq *AuditQuery) WithMessages(opts ...func(*MessageQuery)) *AuditQuery {
-	query := &MessageQuery{config: aq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	aq.withMessages = query
-	return aq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -349,11 +312,8 @@ func (aq *AuditQuery) prepareQuery(ctx context.Context) error {
 
 func (aq *AuditQuery) sqlAll(ctx context.Context) ([]*Audit, error) {
 	var (
-		nodes       = []*Audit{}
-		_spec       = aq.querySpec()
-		loadedTypes = [1]bool{
-			aq.withMessages != nil,
-		}
+		nodes = []*Audit{}
+		_spec = aq.querySpec()
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Audit{config: aq.config}
@@ -365,7 +325,6 @@ func (aq *AuditQuery) sqlAll(ctx context.Context) ([]*Audit, error) {
 			return fmt.Errorf("ent: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
-		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, aq.driver, _spec); err != nil {
@@ -374,36 +333,6 @@ func (aq *AuditQuery) sqlAll(ctx context.Context) ([]*Audit, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-
-	if query := aq.withMessages; query != nil {
-		fks := make([]driver.Value, 0, len(nodes))
-		nodeids := make(map[int]*Audit)
-		for i := range nodes {
-			fks = append(fks, nodes[i].ID)
-			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Messages = []*Message{}
-		}
-		query.withFKs = true
-		query.Where(predicate.Message(func(s *sql.Selector) {
-			s.Where(sql.InValues(audit.MessagesColumn, fks...))
-		}))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			fk := n.audit_messages
-			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "audit_messages" is nil for node %v`, n.ID)
-			}
-			node, ok := nodeids[*fk]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "audit_messages" returned %v for node %v`, *fk, n.ID)
-			}
-			node.Edges.Messages = append(node.Edges.Messages, n)
-		}
-	}
-
 	return nodes, nil
 }
 
@@ -430,7 +359,7 @@ func (aq *AuditQuery) querySpec() *sqlgraph.QuerySpec {
 			Table:   audit.Table,
 			Columns: audit.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeInt,
+				Type:   field.TypeUUID,
 				Column: audit.FieldID,
 			},
 		},

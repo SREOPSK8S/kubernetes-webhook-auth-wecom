@@ -4,13 +4,15 @@ package audit
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
 	// Label holds the string label denoting the audit type in the database.
 	Label = "audit"
 	// FieldID holds the string denoting the id field in the database.
-	FieldID = "id"
+	FieldID = "uuid"
 	// FieldUID holds the string denoting the u_id field in the database.
 	FieldUID = "u_id"
 	// FieldMID holds the string denoting the m_id field in the database.
@@ -21,17 +23,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// EdgeMessages holds the string denoting the messages edge name in mutations.
-	EdgeMessages = "messages"
 	// Table holds the table name of the audit in the database.
 	Table = "audits"
-	// MessagesTable is the table that holds the messages relation/edge.
-	MessagesTable = "messages"
-	// MessagesInverseTable is the table name for the Message entity.
-	// It exists in this package in order to avoid circular dependency with the "message" package.
-	MessagesInverseTable = "messages"
-	// MessagesColumn is the table column denoting the messages relation/edge.
-	MessagesColumn = "audit_messages"
 )
 
 // Columns holds all SQL columns for audit fields.
@@ -61,4 +54,6 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// DefaultID holds the default value on creation for the "id" field.
+	DefaultID func() uuid.UUID
 )

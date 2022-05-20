@@ -8,6 +8,7 @@ import (
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/audit"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/message"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/schema"
+	"github.com/google/uuid"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -17,15 +18,19 @@ func init() {
 	auditFields := schema.Audit{}.Fields()
 	_ = auditFields
 	// auditDescCreatedAt is the schema descriptor for created_at field.
-	auditDescCreatedAt := auditFields[3].Descriptor()
+	auditDescCreatedAt := auditFields[4].Descriptor()
 	// audit.DefaultCreatedAt holds the default value on creation for the created_at field.
 	audit.DefaultCreatedAt = auditDescCreatedAt.Default.(func() time.Time)
 	// auditDescUpdatedAt is the schema descriptor for updated_at field.
-	auditDescUpdatedAt := auditFields[4].Descriptor()
+	auditDescUpdatedAt := auditFields[5].Descriptor()
 	// audit.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	audit.DefaultUpdatedAt = auditDescUpdatedAt.Default.(func() time.Time)
 	// audit.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	audit.UpdateDefaultUpdatedAt = auditDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// auditDescID is the schema descriptor for id field.
+	auditDescID := auditFields[0].Descriptor()
+	// audit.DefaultID holds the default value on creation for the id field.
+	audit.DefaultID = auditDescID.Default.(func() uuid.UUID)
 	messageFields := schema.Message{}.Fields()
 	_ = messageFields
 	// messageDescCreatedAt is the schema descriptor for created_at field.

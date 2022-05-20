@@ -12,6 +12,7 @@ import (
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/audit"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/message"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/predicate"
+	"github.com/google/uuid"
 
 	"entgo.io/ent"
 )
@@ -34,16 +35,13 @@ type AuditMutation struct {
 	config
 	op                 Op
 	typ                string
-	id                 *int
+	id                 *uuid.UUID
 	u_id               *string
 	m_id               *string
 	certification_time *time.Time
 	created_at         *time.Time
 	updated_at         *time.Time
 	clearedFields      map[string]struct{}
-	messages           map[int]struct{}
-	removedmessages    map[int]struct{}
-	clearedmessages    bool
 	done               bool
 	oldValue           func(context.Context) (*Audit, error)
 	predicates         []predicate.Audit
@@ -69,7 +67,7 @@ func newAuditMutation(c config, op Op, opts ...auditOption) *AuditMutation {
 }
 
 // withAuditID sets the ID field of the mutation.
-func withAuditID(id int) auditOption {
+func withAuditID(id uuid.UUID) auditOption {
 	return func(m *AuditMutation) {
 		var (
 			err   error
@@ -119,9 +117,15 @@ func (m AuditMutation) Tx() (*Tx, error) {
 	return tx, nil
 }
 
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Audit entities.
+func (m *AuditMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *AuditMutation) ID() (id int, exists bool) {
+func (m *AuditMutation) ID() (id uuid.UUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -132,12 +136,12 @@ func (m *AuditMutation) ID() (id int, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *AuditMutation) IDs(ctx context.Context) ([]int, error) {
+func (m *AuditMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []int{id}, nil
+			return []uuid.UUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -340,60 +344,6 @@ func (m *AuditMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
-// AddMessageIDs adds the "messages" edge to the Message entity by ids.
-func (m *AuditMutation) AddMessageIDs(ids ...int) {
-	if m.messages == nil {
-		m.messages = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.messages[ids[i]] = struct{}{}
-	}
-}
-
-// ClearMessages clears the "messages" edge to the Message entity.
-func (m *AuditMutation) ClearMessages() {
-	m.clearedmessages = true
-}
-
-// MessagesCleared reports if the "messages" edge to the Message entity was cleared.
-func (m *AuditMutation) MessagesCleared() bool {
-	return m.clearedmessages
-}
-
-// RemoveMessageIDs removes the "messages" edge to the Message entity by IDs.
-func (m *AuditMutation) RemoveMessageIDs(ids ...int) {
-	if m.removedmessages == nil {
-		m.removedmessages = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.messages, ids[i])
-		m.removedmessages[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedMessages returns the removed IDs of the "messages" edge to the Message entity.
-func (m *AuditMutation) RemovedMessagesIDs() (ids []int) {
-	for id := range m.removedmessages {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// MessagesIDs returns the "messages" edge IDs in the mutation.
-func (m *AuditMutation) MessagesIDs() (ids []int) {
-	for id := range m.messages {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetMessages resets all changes to the "messages" edge.
-func (m *AuditMutation) ResetMessages() {
-	m.messages = nil
-	m.clearedmessages = false
-	m.removedmessages = nil
-}
-
 // Where appends a list predicates to the AuditMutation builder.
 func (m *AuditMutation) Where(ps ...predicate.Audit) {
 	m.predicates = append(m.predicates, ps...)
@@ -589,85 +539,49 @@ func (m *AuditMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *AuditMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.messages != nil {
-		edges = append(edges, audit.EdgeMessages)
-	}
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *AuditMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case audit.EdgeMessages:
-		ids := make([]ent.Value, 0, len(m.messages))
-		for id := range m.messages {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *AuditMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.removedmessages != nil {
-		edges = append(edges, audit.EdgeMessages)
-	}
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *AuditMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case audit.EdgeMessages:
-		ids := make([]ent.Value, 0, len(m.removedmessages))
-		for id := range m.removedmessages {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *AuditMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.clearedmessages {
-		edges = append(edges, audit.EdgeMessages)
-	}
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *AuditMutation) EdgeCleared(name string) bool {
-	switch name {
-	case audit.EdgeMessages:
-		return m.clearedmessages
-	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *AuditMutation) ClearEdge(name string) error {
-	switch name {
-	}
 	return fmt.Errorf("unknown Audit unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *AuditMutation) ResetEdge(name string) error {
-	switch name {
-	case audit.EdgeMessages:
-		m.ResetMessages()
-		return nil
-	}
 	return fmt.Errorf("unknown Audit edge %s", name)
 }
 
@@ -681,8 +595,6 @@ type MessageMutation struct {
 	content       *string
 	created_at    *time.Time
 	clearedFields map[string]struct{}
-	owner         *int
-	clearedowner  bool
 	done          bool
 	oldValue      func(context.Context) (*Message, error)
 	predicates    []predicate.Message
@@ -894,45 +806,6 @@ func (m *MessageMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
-// SetOwnerID sets the "owner" edge to the Audit entity by id.
-func (m *MessageMutation) SetOwnerID(id int) {
-	m.owner = &id
-}
-
-// ClearOwner clears the "owner" edge to the Audit entity.
-func (m *MessageMutation) ClearOwner() {
-	m.clearedowner = true
-}
-
-// OwnerCleared reports if the "owner" edge to the Audit entity was cleared.
-func (m *MessageMutation) OwnerCleared() bool {
-	return m.clearedowner
-}
-
-// OwnerID returns the "owner" edge ID in the mutation.
-func (m *MessageMutation) OwnerID() (id int, exists bool) {
-	if m.owner != nil {
-		return *m.owner, true
-	}
-	return
-}
-
-// OwnerIDs returns the "owner" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// OwnerID instead. It exists only for internal usage by the builders.
-func (m *MessageMutation) OwnerIDs() (ids []int) {
-	if id := m.owner; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetOwner resets all changes to the "owner" edge.
-func (m *MessageMutation) ResetOwner() {
-	m.owner = nil
-	m.clearedowner = false
-}
-
 // Where appends a list predicates to the MessageMutation builder.
 func (m *MessageMutation) Where(ps ...predicate.Message) {
 	m.predicates = append(m.predicates, ps...)
@@ -1085,76 +958,48 @@ func (m *MessageMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *MessageMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.owner != nil {
-		edges = append(edges, message.EdgeOwner)
-	}
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *MessageMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case message.EdgeOwner:
-		if id := m.owner; id != nil {
-			return []ent.Value{*id}
-		}
-	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *MessageMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *MessageMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *MessageMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.clearedowner {
-		edges = append(edges, message.EdgeOwner)
-	}
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *MessageMutation) EdgeCleared(name string) bool {
-	switch name {
-	case message.EdgeOwner:
-		return m.clearedowner
-	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *MessageMutation) ClearEdge(name string) error {
-	switch name {
-	case message.EdgeOwner:
-		m.ClearOwner()
-		return nil
-	}
 	return fmt.Errorf("unknown Message unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *MessageMutation) ResetEdge(name string) error {
-	switch name {
-	case message.EdgeOwner:
-		m.ResetOwner()
-		return nil
-	}
 	return fmt.Errorf("unknown Message edge %s", name)
 }

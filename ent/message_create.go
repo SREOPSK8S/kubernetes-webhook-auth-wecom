@@ -10,7 +10,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/audit"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/message"
 )
 
@@ -45,25 +44,6 @@ func (mc *MessageCreate) SetNillableCreatedAt(t *time.Time) *MessageCreate {
 		mc.SetCreatedAt(*t)
 	}
 	return mc
-}
-
-// SetOwnerID sets the "owner" edge to the Audit entity by ID.
-func (mc *MessageCreate) SetOwnerID(id int) *MessageCreate {
-	mc.mutation.SetOwnerID(id)
-	return mc
-}
-
-// SetNillableOwnerID sets the "owner" edge to the Audit entity by ID if the given value is not nil.
-func (mc *MessageCreate) SetNillableOwnerID(id *int) *MessageCreate {
-	if id != nil {
-		mc = mc.SetOwnerID(*id)
-	}
-	return mc
-}
-
-// SetOwner sets the "owner" edge to the Audit entity.
-func (mc *MessageCreate) SetOwner(a *Audit) *MessageCreate {
-	return mc.SetOwnerID(a.ID)
 }
 
 // Mutation returns the MessageMutation object of the builder.
@@ -204,26 +184,6 @@ func (mc *MessageCreate) createSpec() (*Message, *sqlgraph.CreateSpec) {
 			Column: message.FieldCreatedAt,
 		})
 		_node.CreatedAt = value
-	}
-	if nodes := mc.mutation.OwnerIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   message.OwnerTable,
-			Columns: []string{message.OwnerColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: audit.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.audit_messages = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

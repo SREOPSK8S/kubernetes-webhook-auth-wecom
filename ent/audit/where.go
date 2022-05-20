@@ -6,33 +6,33 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/predicate"
+	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int) predicate.Audit {
+func ID(id uuid.UUID) predicate.Audit {
 	return predicate.Audit(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldID), id))
 	})
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int) predicate.Audit {
+func IDEQ(id uuid.UUID) predicate.Audit {
 	return predicate.Audit(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldID), id))
 	})
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int) predicate.Audit {
+func IDNEQ(id uuid.UUID) predicate.Audit {
 	return predicate.Audit(func(s *sql.Selector) {
 		s.Where(sql.NEQ(s.C(FieldID), id))
 	})
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int) predicate.Audit {
+func IDIn(ids ...uuid.UUID) predicate.Audit {
 	return predicate.Audit(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
@@ -49,7 +49,7 @@ func IDIn(ids ...int) predicate.Audit {
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int) predicate.Audit {
+func IDNotIn(ids ...uuid.UUID) predicate.Audit {
 	return predicate.Audit(func(s *sql.Selector) {
 		// if not arguments were provided, append the FALSE constants,
 		// since we can't apply "IN ()". This will make this predicate falsy.
@@ -66,28 +66,28 @@ func IDNotIn(ids ...int) predicate.Audit {
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int) predicate.Audit {
+func IDGT(id uuid.UUID) predicate.Audit {
 	return predicate.Audit(func(s *sql.Selector) {
 		s.Where(sql.GT(s.C(FieldID), id))
 	})
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int) predicate.Audit {
+func IDGTE(id uuid.UUID) predicate.Audit {
 	return predicate.Audit(func(s *sql.Selector) {
 		s.Where(sql.GTE(s.C(FieldID), id))
 	})
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int) predicate.Audit {
+func IDLT(id uuid.UUID) predicate.Audit {
 	return predicate.Audit(func(s *sql.Selector) {
 		s.Where(sql.LT(s.C(FieldID), id))
 	})
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int) predicate.Audit {
+func IDLTE(id uuid.UUID) predicate.Audit {
 	return predicate.Audit(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldID), id))
 	})
@@ -589,34 +589,6 @@ func UpdatedAtLT(v time.Time) predicate.Audit {
 func UpdatedAtLTE(v time.Time) predicate.Audit {
 	return predicate.Audit(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldUpdatedAt), v))
-	})
-}
-
-// HasMessages applies the HasEdge predicate on the "messages" edge.
-func HasMessages() predicate.Audit {
-	return predicate.Audit(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(MessagesTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, MessagesTable, MessagesColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasMessagesWith applies the HasEdge predicate on the "messages" edge with a given conditions (other predicates).
-func HasMessagesWith(preds ...predicate.Message) predicate.Audit {
-	return predicate.Audit(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(MessagesInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, MessagesTable, MessagesColumn),
-		)
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
 	})
 }
 

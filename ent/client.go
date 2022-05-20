@@ -8,13 +8,13 @@ import (
 	"log"
 
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/migrate"
+	"github.com/google/uuid"
 
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/audit"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/message"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -170,7 +170,7 @@ func (c *AuditClient) UpdateOne(a *Audit) *AuditUpdateOne {
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *AuditClient) UpdateOneID(id int) *AuditUpdateOne {
+func (c *AuditClient) UpdateOneID(id uuid.UUID) *AuditUpdateOne {
 	mutation := newAuditMutation(c.config, OpUpdateOne, withAuditID(id))
 	return &AuditUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
@@ -187,7 +187,7 @@ func (c *AuditClient) DeleteOne(a *Audit) *AuditDeleteOne {
 }
 
 // DeleteOneID returns a delete builder for the given id.
-func (c *AuditClient) DeleteOneID(id int) *AuditDeleteOne {
+func (c *AuditClient) DeleteOneID(id uuid.UUID) *AuditDeleteOne {
 	builder := c.Delete().Where(audit.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
@@ -202,33 +202,17 @@ func (c *AuditClient) Query() *AuditQuery {
 }
 
 // Get returns a Audit entity by its id.
-func (c *AuditClient) Get(ctx context.Context, id int) (*Audit, error) {
+func (c *AuditClient) Get(ctx context.Context, id uuid.UUID) (*Audit, error) {
 	return c.Query().Where(audit.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *AuditClient) GetX(ctx context.Context, id int) *Audit {
+func (c *AuditClient) GetX(ctx context.Context, id uuid.UUID) *Audit {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
 	}
 	return obj
-}
-
-// QueryMessages queries the messages edge of a Audit.
-func (c *AuditClient) QueryMessages(a *Audit) *MessageQuery {
-	query := &MessageQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := a.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(audit.Table, audit.FieldID, id),
-			sqlgraph.To(message.Table, message.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, audit.MessagesTable, audit.MessagesColumn),
-		)
-		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
 }
 
 // Hooks returns the client hooks.
@@ -319,22 +303,6 @@ func (c *MessageClient) GetX(ctx context.Context, id int) *Message {
 		panic(err)
 	}
 	return obj
-}
-
-// QueryOwner queries the owner edge of a Message.
-func (c *MessageClient) QueryOwner(m *Message) *AuditQuery {
-	query := &AuditQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
-		id := m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(message.Table, message.FieldID, id),
-			sqlgraph.To(audit.Table, audit.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, message.OwnerTable, message.OwnerColumn),
-		)
-		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
 }
 
 // Hooks returns the client hooks.

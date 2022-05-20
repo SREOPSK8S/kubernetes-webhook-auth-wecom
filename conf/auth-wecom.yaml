@@ -10,4 +10,12 @@ etcd:
   endpoints:
     - "localhost:2379"
 
-
+datasource:
+  driverName: mysql
+  host: 114.117.4.83
+  port: 3389
+  database: LearnGo
+  username: learn.go
+  password: Lsunstack@1234
+  charset: utf8
+  loc: Asia/Shanghai

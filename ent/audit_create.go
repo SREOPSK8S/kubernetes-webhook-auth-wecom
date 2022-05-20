@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/audit"
-	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/message"
+	"github.com/google/uuid"
 )
 
 // AuditCreate is the builder for creating a Audit entity.
@@ -75,19 +75,18 @@ func (ac *AuditCreate) SetNillableUpdatedAt(t *time.Time) *AuditCreate {
 	return ac
 }
 
-// AddMessageIDs adds the "messages" edge to the Message entity by IDs.
-func (ac *AuditCreate) AddMessageIDs(ids ...int) *AuditCreate {
-	ac.mutation.AddMessageIDs(ids...)
+// SetID sets the "id" field.
+func (ac *AuditCreate) SetID(u uuid.UUID) *AuditCreate {
+	ac.mutation.SetID(u)
 	return ac
 }
 
-// AddMessages adds the "messages" edges to the Message entity.
-func (ac *AuditCreate) AddMessages(m ...*Message) *AuditCreate {
-	ids := make([]int, len(m))
-	for i := range m {
-		ids[i] = m[i].ID
+// SetNillableID sets the "id" field if the given value is not nil.
+func (ac *AuditCreate) SetNillableID(u *uuid.UUID) *AuditCreate {
+	if u != nil {
+		ac.SetID(*u)
 	}
-	return ac.AddMessageIDs(ids...)
+	return ac
 }
 
 // Mutation returns the AuditMutation object of the builder.
@@ -169,6 +168,10 @@ func (ac *AuditCreate) defaults() {
 		v := audit.DefaultUpdatedAt()
 		ac.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := ac.mutation.ID(); !ok {
+		v := audit.DefaultID()
+		ac.mutation.SetID(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -196,8 +199,13 @@ func (ac *AuditCreate) sqlSave(ctx context.Context) (*Audit, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	return _node, nil
 }
 
@@ -207,11 +215,15 @@ func (ac *AuditCreate) createSpec() (*Audit, *sqlgraph.CreateSpec) {
 		_spec = &sqlgraph.CreateSpec{
 			Table: audit.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeInt,
+				Type:   field.TypeUUID,
 				Column: audit.FieldID,
 			},
 		}
 	)
+	if id, ok := ac.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
+	}
 	if value, ok := ac.mutation.UID(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
@@ -251,25 +263,6 @@ func (ac *AuditCreate) createSpec() (*Audit, *sqlgraph.CreateSpec) {
 			Column: audit.FieldUpdatedAt,
 		})
 		_node.UpdatedAt = value
-	}
-	if nodes := ac.mutation.MessagesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   audit.MessagesTable,
-			Columns: []string{audit.MessagesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: message.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }
@@ -316,10 +309,6 @@ func (acb *AuditCreateBulk) Save(ctx context.Context) ([]*Audit, error) {
 				}
 				mutation.id = &nodes[i].ID
 				mutation.done = true
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				return nodes[i], nil
 			})
 			for i := len(builder.hooks) - 1; i >= 0; i-- {

@@ -9,13 +9,14 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/audit"
+	"github.com/google/uuid"
 )
 
 // Audit is the model entity for the Audit schema.
 type Audit struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
 	// UID holds the value of the "u_id" field.
 	UID string `json:"u_id,omitempty"`
 	// MID holds the value of the "m_id" field.
@@ -26,27 +27,6 @@ type Audit struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
-	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the AuditQuery when eager-loading is set.
-	Edges AuditEdges `json:"edges"`
-}
-
-// AuditEdges holds the relations/edges for other nodes in the graph.
-type AuditEdges struct {
-	// Messages holds the value of the messages edge.
-	Messages []*Message `json:"messages,omitempty"`
-	// loadedTypes holds the information for reporting if a
-	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
-}
-
-// MessagesOrErr returns the Messages value or an error if the edge
-// was not loaded in eager-loading.
-func (e AuditEdges) MessagesOrErr() ([]*Message, error) {
-	if e.loadedTypes[0] {
-		return e.Messages, nil
-	}
-	return nil, &NotLoadedError{edge: "messages"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -54,12 +34,12 @@ func (*Audit) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case audit.FieldID:
-			values[i] = new(sql.NullInt64)
 		case audit.FieldUID, audit.FieldMID:
 			values[i] = new(sql.NullString)
 		case audit.FieldCertificationTime, audit.FieldCreatedAt, audit.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
+		case audit.FieldID:
+			values[i] = new(uuid.UUID)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Audit", columns[i])
 		}
@@ -76,11 +56,11 @@ func (a *Audit) assignValues(columns []string, values []interface{}) error {
 	for i := range columns {
 		switch columns[i] {
 		case audit.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				a.ID = *value
 			}
-			a.ID = int(value.Int64)
 		case audit.FieldUID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field u_id", values[i])
@@ -114,11 +94,6 @@ func (a *Audit) assignValues(columns []string, values []interface{}) error {
 		}
 	}
 	return nil
-}
-
-// QueryMessages queries the "messages" edge of the Audit entity.
-func (a *Audit) QueryMessages() *MessageQuery {
-	return (&AuditClient{config: a.config}).QueryMessages(a)
 }
 
 // Update returns a builder for updating this Audit.

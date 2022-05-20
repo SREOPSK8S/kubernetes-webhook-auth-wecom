@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/audit"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/message"
 )
 
@@ -26,33 +25,6 @@ type Message struct {
 	// CreatedAt holds the value of the "created_at" field.
 	// msg create time
 	CreatedAt time.Time `json:"created_at,omitempty"`
-	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the MessageQuery when eager-loading is set.
-	Edges          MessageEdges `json:"edges"`
-	audit_messages *int
-}
-
-// MessageEdges holds the relations/edges for other nodes in the graph.
-type MessageEdges struct {
-	// Owner holds the value of the owner edge.
-	Owner *Audit `json:"owner,omitempty"`
-	// loadedTypes holds the information for reporting if a
-	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
-}
-
-// OwnerOrErr returns the Owner value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e MessageEdges) OwnerOrErr() (*Audit, error) {
-	if e.loadedTypes[0] {
-		if e.Owner == nil {
-			// The edge owner was loaded in eager-loading,
-			// but was not found.
-			return nil, &NotFoundError{label: audit.Label}
-		}
-		return e.Owner, nil
-	}
-	return nil, &NotLoadedError{edge: "owner"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -66,8 +38,6 @@ func (*Message) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullString)
 		case message.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case message.ForeignKeys[0]: // audit_messages
-			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Message", columns[i])
 		}
@@ -107,21 +77,9 @@ func (m *Message) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				m.CreatedAt = value.Time
 			}
-		case message.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field audit_messages", value)
-			} else if value.Valid {
-				m.audit_messages = new(int)
-				*m.audit_messages = int(value.Int64)
-			}
 		}
 	}
 	return nil
-}
-
-// QueryOwner queries the "owner" edge of the Message entity.
-func (m *Message) QueryOwner() *AuditQuery {
-	return (&MessageClient{config: m.config}).QueryOwner(m)
 }
 
 // Update returns a builder for updating this Message.

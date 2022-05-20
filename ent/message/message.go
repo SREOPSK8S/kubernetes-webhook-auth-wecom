@@ -17,17 +17,8 @@ const (
 	FieldContent = "content"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
-	// EdgeOwner holds the string denoting the owner edge name in mutations.
-	EdgeOwner = "owner"
 	// Table holds the table name of the message in the database.
 	Table = "messages"
-	// OwnerTable is the table that holds the owner relation/edge.
-	OwnerTable = "messages"
-	// OwnerInverseTable is the table name for the Audit entity.
-	// It exists in this package in order to avoid circular dependency with the "audit" package.
-	OwnerInverseTable = "audits"
-	// OwnerColumn is the table column denoting the owner relation/edge.
-	OwnerColumn = "audit_messages"
 )
 
 // Columns holds all SQL columns for message fields.
@@ -38,21 +29,10 @@ var Columns = []string{
 	FieldCreatedAt,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the "messages"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"audit_messages",
-}
-
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}

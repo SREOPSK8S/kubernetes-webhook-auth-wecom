@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/audit"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/message"
 	"github.com/SREOPSK8S/kubernetes-webhook-auth-wecom/ent/predicate"
 )
@@ -25,9 +24,6 @@ type MessageQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Message
-	// eager-loading edges.
-	withOwner *AuditQuery
-	withFKs   bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -62,28 +58,6 @@ func (mq *MessageQuery) Unique(unique bool) *MessageQuery {
 func (mq *MessageQuery) Order(o ...OrderFunc) *MessageQuery {
 	mq.order = append(mq.order, o...)
 	return mq
-}
-
-// QueryOwner chains the current query on the "owner" edge.
-func (mq *MessageQuery) QueryOwner() *AuditQuery {
-	query := &AuditQuery{config: mq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := mq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := mq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(message.Table, message.FieldID, selector),
-			sqlgraph.To(audit.Table, audit.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, message.OwnerTable, message.OwnerColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // First returns the first Message entity from the query.
@@ -267,23 +241,11 @@ func (mq *MessageQuery) Clone() *MessageQuery {
 		offset:     mq.offset,
 		order:      append([]OrderFunc{}, mq.order...),
 		predicates: append([]predicate.Message{}, mq.predicates...),
-		withOwner:  mq.withOwner.Clone(),
 		// clone intermediate query.
 		sql:    mq.sql.Clone(),
 		path:   mq.path,
 		unique: mq.unique,
 	}
-}
-
-// WithOwner tells the query-builder to eager-load the nodes that are connected to
-// the "owner" edge. The optional arguments are used to configure the query builder of the edge.
-func (mq *MessageQuery) WithOwner(opts ...func(*AuditQuery)) *MessageQuery {
-	query := &AuditQuery{config: mq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	mq.withOwner = query
-	return mq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -349,19 +311,9 @@ func (mq *MessageQuery) prepareQuery(ctx context.Context) error {
 
 func (mq *MessageQuery) sqlAll(ctx context.Context) ([]*Message, error) {
 	var (
-		nodes       = []*Message{}
-		withFKs     = mq.withFKs
-		_spec       = mq.querySpec()
-		loadedTypes = [1]bool{
-			mq.withOwner != nil,
-		}
+		nodes = []*Message{}
+		_spec = mq.querySpec()
 	)
-	if mq.withOwner != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, message.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Message{config: mq.config}
 		nodes = append(nodes, node)
@@ -372,7 +324,6 @@ func (mq *MessageQuery) sqlAll(ctx context.Context) ([]*Message, error) {
 			return fmt.Errorf("ent: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
-		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, mq.driver, _spec); err != nil {
@@ -381,36 +332,6 @@ func (mq *MessageQuery) sqlAll(ctx context.Context) ([]*Message, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-
-	if query := mq.withOwner; query != nil {
-		ids := make([]int, 0, len(nodes))
-		nodeids := make(map[int][]*Message)
-		for i := range nodes {
-			if nodes[i].audit_messages == nil {
-				continue
-			}
-			fk := *nodes[i].audit_messages
-			if _, ok := nodeids[fk]; !ok {
-				ids = append(ids, fk)
-			}
-			nodeids[fk] = append(nodeids[fk], nodes[i])
-		}
-		query.Where(audit.IDIn(ids...))
-		neighbors, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, n := range neighbors {
-			nodes, ok := nodeids[n.ID]
-			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "audit_messages" returned %v`, n.ID)
-			}
-			for i := range nodes {
-				nodes[i].Edges.Owner = n
-			}
-		}
-	}
-
 	return nodes, nil
 }
 
