@@ -43,7 +43,7 @@ func (DataClient)GetConnection() *ent.Client {
 	)
 	client, err := ent.Open(driverName, rst)
 	if err != nil {
-		logs.Logger.Fatal("failed open connecting to mysql",zap.Any("error",err))
+		logs.Logger.Fatal("failed open connecting to mysql",zap.Any("error",err),zap.String("url",rst))
 	}
 	return client
 }

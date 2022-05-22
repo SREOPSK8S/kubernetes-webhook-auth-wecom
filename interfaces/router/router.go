@@ -7,7 +7,7 @@ import (
 
 func GetRouter() *gin.Engine  {
 	router := gin.Default()
-	router.GET("/healthz",handler.Healthy)
+	router.GET("/health",handler.Healthy)
 	router.POST("/work_chat/authentication",handler.TokenRequest)
 	return router
 }

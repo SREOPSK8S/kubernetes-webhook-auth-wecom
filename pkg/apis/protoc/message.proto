@@ -1,0 +1,26 @@
+syntax = "proto3";
+package api;
+option go_package = "../api";
+//        https://developers.google.com/protocol-buffers/docs/gotutorial
+message HelloRequest{
+    string name = 1;
+}
+message Person {
+    string name = 1;
+    int32 id = 2;  // Unique ID number for this person.
+    string email = 3; // email
+
+    enum PhoneType {
+        MOBILE = 0;
+        HOME = 1;
+        WORK = 2;
+    }
+
+    message PhoneNumber {
+        string number = 1;
+        PhoneType type = 2;
+    }
+
+    repeated PhoneNumber phones = 4;
+    map<string ,string > keys = 5;
+}
