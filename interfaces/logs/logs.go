@@ -26,3 +26,6 @@ func GetLogs() *zap.Logger {
 	}
 	return logger
 }
+func NewLogger() *zap.Logger {
+	return GetLogs()
+}
