@@ -43,11 +43,11 @@ func (w *WorkChatImpl) SendMsgToUser(ctx context.Context, msg string, msgType st
 	switch typeRequestI := typeRequest.(type) {
 	case *wecom.SendAppMessageRequestText:
 		BParamsText = typeRequestI
-		BParamsText.Text.Content =msg
+		BParamsText.Text.Content = msg
 		BParamsText.Touser = toUsers
 		BParamsText.Agentid = config.GetAgentId()
 	case *wecom.SendAppMessageMarkDownRequest:
-		BParamsMarkDown= typeRequestI
+		BParamsMarkDown = typeRequestI
 		BParamsMarkDown.Touser = toUsers
 		BParamsMarkDown.Agentid = config.GetAgentId()
 		BParamsMarkDown.Markdown.Content = msg
@@ -76,23 +76,25 @@ func (w *WorkChatImpl) SendMsgToUser(ctx context.Context, msg string, msgType st
 
 func (w *WorkChatImpl) GetServerAccessToken() (accessToken string, status bool) {
 	// 需要完成从cache里面获取
-	ctx := context.TODO()
-	var store wecom.StoreAccessToken = stores.EtcdImpl{}
-	// todo 从缓存读取
-	accessToken, status = store.GetSoreAccessToken(ctx)
-	if !status || accessToken == "" {
-		// 不在缓存中，请求后端服务并重新写入缓存
-		result, ok := w.GetAccessTokenFromWorkChat()
-		status = ok
-		accessToken = result.AccessToken
-		// todo 写入缓存中
-		setStatus := store.SetSoreAccessToken(ctx, accessToken, wecom.WorkChatAccessTokenExpire)
-		if setStatus != true {
-			logs.Logger.Error("Store SetSoreAccessToken Token failure")
-		}
-		return
-	}
-	return accessToken, status
+	//ctx := context.TODO()
+	//var store wecom.StoreAccessToken = stores.EtcdImpl{}
+	//// todo 从缓存读取
+	//accessToken, status = store.GetSoreAccessToken(ctx)
+	//if !status || accessToken == "" {
+	//	// 不在缓存中，请求后端服务并重新写入缓存
+	//	result, ok := w.GetAccessTokenFromWorkChat()
+	//	status = ok
+	//	accessToken = result.AccessToken
+	//	// todo 写入缓存中
+	//	setStatus := store.SetSoreAccessToken(ctx, accessToken, wecom.WorkChatAccessTokenExpire)
+	//	if setStatus != true {
+	//		logs.Logger.Error("Store SetSoreAccessToken Token failure")
+	//	}
+	//	return
+	//}
+	result, ok := w.GetAccessTokenFromWorkChat()
+	accessToken = result.AccessToken
+	return accessToken, ok
 }
 
 func (w *WorkChatImpl) GetAccessTokenFromWorkChat() (result *wecom.AccessTokenResponse, status bool) {
