@@ -27,25 +27,30 @@ func TokenRequest(c *gin.Context) {
 		zap.Any("header", c.Request.Header),
 		zap.String("host", c.Request.Host),
 		zap.String("remoteAddr", c.Request.RemoteAddr))
-	var valid  interfs.AuthenticationUserInfo =&worksimpl.WorkChatImpl{}
+	var valid interfs.AuthenticationUserInfo = &worksimpl.WorkChatImpl{}
 	var server wecom.ServerAccessToken = &worksimpl.WorkChatImpl{}
+	logs.Logger.Info("start send request to work chat server")
 	data, ok := server.GetServerAccessToken()
 	if !ok {
 		c.JSON(500, "服务器未知错误")
 		return
 	}
-	wroks := &worksimpl.WorkChatImpl{
+
+	works := &worksimpl.WorkChatImpl{
 		AccessTokenMap: map[string]string{
-			"access_token":data,
+			"access_token": data,
 		},
 		SuccessResponse: worksimpl.NewReadMemberResponse(),
 	}
-	status := wroks.TokenReviewVerify(tr)
-	if !status{
-		c.JSON(403,valid.TokenReviewFailure(tr))
+	logs.Logger.Info("work data ", zap.Any("data", works))
+	status := works.TokenReviewVerify(tr)
+	logs.Logger.Info("verify result status  data ", zap.Bool("status", status))
+	if !status {
+		c.JSON(403, valid.TokenReviewFailure(tr))
 		return
 	}
-	response := wroks.TokenReviewSuccess(tr)
+	response := works.TokenReviewSuccess(tr)
+	logs.Logger.Info("verify response  data ", zap.Any("response", response))
 	logs.Logger.Info("response data", zap.Any("response", response))
 	c.JSON(200, response)
 }
